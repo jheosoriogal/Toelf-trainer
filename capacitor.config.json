@@ -1,0 +1,22 @@
+{
+  "appId": "com.jheosoriogal.toefltrainer",
+  "appName": "TOEFL Trainer",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 600,
+      "backgroundColor": "#1a2f94",
+      "showSpinner": false
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_toefl",
+      "iconColor": "#2340c4"
+    },
+    "SystemBars": {
+      "insetsHandling": "native"
+    }
+  }
+}

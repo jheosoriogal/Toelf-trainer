@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<script src="capacitor.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entrenador TOEFL iBT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Lexend:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: un entrenador claro y alentador; instrucciones en español, contenido en inglés.
+   IDEA: la hoja de respuestas del examen marcada con bolígrafo y resaltador.
+   PICTURE: la regla de bandas 1–6 con tu nivel por sección; luego, el ejercicio mismo.
+   COLOUR and TYPE: papel blanco, tinta de bolígrafo azul, resaltador amarillo, rojo de corrección; Lexend + Atkinson Hyperlegible.
+   LAYOUT: banda azul con navegación, contenido hasta 1100px, dos columnas texto/preguntas que se apilan en el móvil. */
+:root{color-scheme:light dark;
+--bg:light-dark(#f6f5f0,#10121a);--paper:light-dark(#fff,#181b26);--ink:light-dark(#181b25,#eceef4);--mute:light-dark(#596073,#a4a9ba);
+--line:light-dark(#dfddd4,#2c3040);--blue:light-dark(#2340c4,#8fa3ff);--blued:light-dark(#1a2f94,#1c2a6e);--hl:#ffd84a;--hls:light-dark(#fff1b0,#4a3e10);
+--red:light-dark(#c4362a,#ff8f82);--reds:light-dark(#fde6e3,#3d1916);--ok:light-dark(#0b7a63,#5fd3b5);--oks:light-dark(#dcf3ec,#12332b)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 "Atkinson Hyperlegible",system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:Lexend,system-ui,sans-serif;line-height:1.1;margin:0 0 .4em;text-wrap:balance}
+h1{font-size:clamp(30px,5vw,46px)}h2{font-size:clamp(24px,3.4vw,32px)}h3{font-size:19px}
+p{margin:.3em 0 .8em}
+.wrap{max-width:1100px;margin:0 auto;padding:0 max(4vw,16px)}
+header{background:var(--blued);color:#fff}
+header .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;padding-block:14px}
+.brand{font:700 19px Lexend,sans-serif;display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none}
+.brand i{width:28px;height:28px;border-radius:50%;background:var(--hl);display:grid;place-items:center;color:#1a2f94;font-style:normal;font-size:15px}
+nav{display:flex;gap:4px;overflow-x:auto;flex:1}
+nav a{flex:none;color:#dfe4ff;text-decoration:none;padding:9px 13px;border-radius:8px;font-size:15px}
+nav a:hover{background:#ffffff1c}nav a.on{background:#fff;color:#1a2f94;font-weight:700}
+main{padding-block:28px 60px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:clamp(16px,2.6vw,26px);margin-bottom:18px}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
+.two{display:grid;gap:18px;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);align-items:start}
+@media(max-width:820px){.two{grid-template-columns:minmax(0,1fr)}}
+.btn{font:700 16px "Atkinson Hyperlegible",sans-serif;min-height:44px;padding:9px 18px;border-radius:10px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.btn:hover{border-color:var(--blue)}.btn:focus-visible,.opt:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,.tile:focus-visible{outline:3px solid var(--hl);outline-offset:2px}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:light-dark(#fff,#0d1330)}
+.btn.hl{background:var(--hl);border-color:var(--hl);color:#1d1a05}
+.btn:disabled{opacity:.5;cursor:default}
+.btn svg{width:18px;height:18px;flex:none}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;align-items:center}
+.mute{color:var(--mute)}.small{font-size:14px}
+.tag{display:inline-block;font-size:13px;padding:2px 9px;border-radius:99px;background:var(--hls);color:var(--ink);white-space:nowrap}
+mark{background:linear-gradient(transparent 35%,var(--hl) 35%,var(--hl) 88%,transparent 88%);color:inherit;padding:0 2px}
+/* ruler */
+.hero{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr);gap:28px;align-items:center}
+@media(max-width:700px){.hero{grid-template-columns:minmax(0,1fr)}}
+.big{text-align:center}.big b{display:inline-block;font:700 clamp(64px,10vw,96px)/1 Lexend,sans-serif;padding:6px 18px;background:linear-gradient(transparent 52%,var(--hl) 52%,var(--hl) 90%,transparent 90%)}
+.big span{display:block;margin-top:6px}
+.ruler{position:relative}
+.scale{display:grid;grid-template-columns:110px minmax(0,1fr);gap:12px;font-size:13px;color:var(--mute)}
+.scale .ticks{display:flex;justify-content:space-between}
+.row{display:grid;grid-template-columns:110px minmax(0,1fr) 44px;gap:12px;align-items:center;margin:12px 0}
+.row b{font-family:Lexend,sans-serif;font-size:15px}
+.track{position:relative;height:16px;border-radius:99px;background:light-dark(#ecebe4,#252938)}
+.fill{position:absolute;inset:0 auto 0 0;border-radius:99px;background:var(--blue);transition:width .6s}
+.target{position:absolute;top:-6px;bottom:-6px;border-left:2px dashed var(--red)}
+.val{font:700 17px Lexend,sans-serif;text-align:right}
+@media(prefers-reduced-motion:reduce){.fill{transition:none}}
+/* activity */
+.bars{display:flex;align-items:flex-end;gap:5px;height:90px;margin-top:8px}
+.bars div{flex:1;background:var(--blue);border-radius:4px 4px 0 0;min-height:3px;opacity:.85}
+.bars div.z{background:var(--line)}
+/* tables */
+table{border-collapse:collapse;width:100%;font-size:15px}th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}th{font-family:Lexend,sans-serif;font-size:14px}
+td.n{text-align:right;white-space:nowrap}
+/* task cards */
+.task h3{margin-bottom:4px}.task .meta{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+details{margin-top:8px}summary{cursor:pointer;font-weight:700;color:var(--blue);min-height:32px}
+details ul{margin:.4em 0;padding-left:1.2em}
+/* practice */
+.ph{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-bottom:16px}
+.ph h2{margin:0;flex:1}
+.clock{font:700 18px Lexend,sans-serif;padding:6px 14px;border-radius:10px;background:var(--paper);border:1px solid var(--line);white-space:nowrap}
+.clock.low{color:var(--red);border-color:var(--red)}
+.inst{font-weight:700}
+.passage{max-height:68vh;overflow:auto;padding-right:6px;font-size:17px}
+.passage p{margin:0 0 .9em}
+.pre{white-space:pre-wrap}
+.q{padding:14px 0;border-top:1px solid var(--line)}.q:first-child{border-top:0;padding-top:0}
+.qt{font-weight:700;margin:0 0 8px}
+.opts{display:grid;gap:8px}
+.opt{display:flex;gap:12px;align-items:flex-start;text-align:left;width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);font:16px/1.4 "Atkinson Hyperlegible",sans-serif;cursor:pointer;min-height:44px}
+.bub{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--mute);display:grid;place-items:center;font-size:13px;font-weight:700}
+.opt.sel{border-color:var(--blue)}.opt.sel .bub{background:var(--blue);border-color:var(--blue);color:light-dark(#fff,#0d1330)}
+.opt.ok{border-color:var(--ok);background:var(--oks)}.opt.bad{border-color:var(--red);background:var(--reds)}
+.opt:disabled{cursor:default}
+.why{font-size:15px;padding:8px 12px;border-radius:8px;background:var(--hls);margin-top:8px}
+.ctext{font-size:19px;line-height:2.3}
+.ctext input{font:inherit;font-size:18px;border:0;border-bottom:2px solid var(--blue);background:light-dark(#eef1ff,#1f2540);color:var(--ink);padding:0 2px;margin:0 1px;border-radius:3px 3px 0 0;text-align:left}
+.ctext input.ok{border-color:var(--ok);background:var(--oks)}.ctext input.bad{border-color:var(--red);background:var(--reds)}
+.fix{color:var(--ok);font-weight:700;font-size:15px;margin-left:2px}
+.player{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;padding:16px;border-radius:12px;background:light-dark(#eef1ff,#1c2238)}
+.wave{display:flex;gap:3px;align-items:center;height:28px}.wave i{width:4px;height:8px;background:var(--blue);border-radius:2px}
+.speaking .wave i{animation:w .9s infinite ease-in-out}.wave i:nth-child(2n){animation-delay:.2s}.wave i:nth-child(3n){animation-delay:.4s}
+@keyframes w{50%{height:26px}}
+@media(prefers-reduced-motion:reduce){.speaking .wave i{animation:none;height:18px}}
+select,input[type=date],input[type=number]{font:16px "Atkinson Hyperlegible",sans-serif;min-height:40px;padding:6px 10px;border-radius:8px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink)}
+textarea{width:100%;min-height:220px;font:17px/1.6 "Atkinson Hyperlegible",sans-serif;padding:14px;border-radius:10px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);resize:vertical}
+.tiles{display:flex;flex-wrap:wrap;gap:8px;min-height:56px;padding:10px;border-radius:10px;border:1.5px dashed var(--line)}
+.tiles.ans{border-style:solid;border-color:var(--blue);background:light-dark(#f4f6ff,#191f36)}
+.tile{font:700 17px "Atkinson Hyperlegible",sans-serif;padding:8px 14px;border-radius:8px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;min-height:44px}
+.ctx{padding:12px 16px;border-left:4px solid var(--hl);background:var(--hls);border-radius:0 8px 8px 0;margin-bottom:14px}
+.post{padding:12px 14px;border-radius:10px;border:1px solid var(--line);margin:10px 0}.post b{display:block;font-family:Lexend,sans-serif;font-size:15px}
+.result{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;padding:16px 20px;border-radius:12px;background:var(--hls);margin-top:18px}
+.result b{font:700 26px Lexend,sans-serif}
+.fb h3{margin-top:16px}.fb ul{padding-left:1.2em}.fb .score{font:700 44px Lexend,sans-serif}
+.diff span{padding:1px 3px;border-radius:4px;margin-right:2px}.diff .h{background:var(--oks);color:var(--ok)}.diff .m{background:var(--reds);color:var(--red);text-decoration:line-through}
+.flash{min-height:220px;display:grid;place-items:center;text-align:center;cursor:pointer;border:2px solid var(--blue)}
+.flash .w{font:700 clamp(32px,6vw,48px) Lexend,sans-serif}
+.boxes{display:flex;gap:8px;flex-wrap:wrap}.boxes span{flex:1;min-width:70px;text-align:center;padding:8px;border-radius:10px;background:var(--paper);border:1px solid var(--line);font-size:14px}.boxes b{display:block;font:700 22px Lexend,sans-serif}
+.note{font-size:14px;color:var(--mute);padding:10px 14px;border-radius:10px;border:1px dashed var(--line);margin-bottom:16px}
+.spin{display:inline-block;width:18px;height:18px;border:3px solid var(--line);border-top-color:var(--blue);border-radius:50%;animation:r 1s linear infinite}@keyframes r{to{transform:rotate(360deg)}}
+.mic.rec{background:var(--red);border-color:var(--red);color:#fff}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}.steps i{width:28px;height:6px;border-radius:3px;background:var(--line)}.steps i.d{background:var(--blue)}.steps i.c{background:var(--hl)}
+footer{font-size:13px;color:var(--mute);padding:24px 0 40px;border-top:1px solid var(--line)}
+@media(max-width:600px){table{font-size:14px}.row{grid-template-columns:84px minmax(0,1fr) 38px}.scale{grid-template-columns:84px minmax(0,1fr)}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<a class="brand" href="#inicio"><i>6</i>Entrenador TOEFL iBT</a>
+<nav id="nav">
+<a href="#inicio">Inicio</a><a href="#hoy">Plan de hoy</a><a href="#reading">Reading</a><a href="#listening">Listening</a><a href="#writing">Writing</a><a href="#speaking">Speaking</a><a href="#vocabulario">Vocabulario</a><a href="#simulacro">Simulacro</a>
+</nav></div></header>
+<main><div class="wrap" id="view"></div></main>
+<footer><div class="wrap">Práctica basada en el formato del TOEFL iBT vigente desde el 21 de enero de 2026 (Reading, Listening, Writing, Speaking; escala de bandas 1–6). Contenido original para entrenamiento: no es material oficial ni está afiliado a ETS. Las bandas son estimaciones aproximadas.</div></footer>
+
+<script>
+{
+/* ===================== CONTENT BANK ===================== */
+const BANK={
+ctest:[
+{title:"Bees",text:"Bees are among the most important insects on Earth. They pollinate a large share of the crops that people depend on for food. Without them, many fruits and vegetables would become rare and expensive. Scientists have observed that bee populations are declining in many regions of the world. The main causes include habitat loss, pesticides, and disease."},
+{title:"Sleep and learning",text:"Sleep is essential for learning. When we sleep, the brain organizes information gathered during the day. Researchers have found that students who sleep well remember more of what they study. In contrast, those who stay up late often struggle to concentrate in class. Even a short nap can improve memory and attention."},
+{title:"Public libraries",text:"The first libraries appeared thousands of years ago. Ancient cities stored clay tablets and scrolls in special buildings. Only scholars and officials could usually read these collections. Over time, printing made books cheaper and more widely available. Today, libraries offer free access to books, computers, and online resources for everyone."},
+{title:"The story of coffee",text:"Coffee originated in the highlands of Ethiopia. According to legend, a herder noticed that his goats became energetic after eating certain berries. The drink later spread to Yemen, where farmers cultivated it on a large scale. By the seventeenth century, coffee houses had opened across Europe. They became important places for conversation and the exchange of news."},
+{title:"Volcanoes",text:"Volcanoes form where molten rock reaches the surface of the planet. Some eruptions are explosive, while others release lava slowly. The ash from large eruptions can travel thousands of kilometers. It may block sunlight and cool the climate for several years. However, volcanic soil is often very fertile, which attracts farmers to live nearby."}
+],
+daily:[
+{title:"Email: Water shut-off",kind:"Email",text:"From: Maria Lopez, Housing Office\nTo: Oak Hall residents\nSubject: Water shut-off on Thursday\n\nDear residents,\n\nPlease be advised that water service will be shut off on Thursday, March 14, from 9:00 a.m. to 1:00 p.m. while plumbers replace a main pipe. We recommend filling some bottles in advance. The laundry room will remain closed until 3:00 p.m. so that the system can be tested.\n\nWe apologize for the inconvenience. If you have questions, reply to this email or visit the front desk.\n\nMaria Lopez",questions:[
+{q:"Why will the water be shut off?",o:["A pipe needs to be replaced.","The laundry room is being renovated.","The building is being inspected for safety.","Residents used too much water."],why:"El correo dice: «while plumbers replace a main pipe»."},
+{q:"What are residents advised to do?",o:["Store some water before the shut-off","Avoid the front desk on Thursday","Do their laundry on Thursday morning","Reply to confirm they received the email"],why:"«We recommend filling some bottles in advance» = guardar agua antes."},
+{q:"When can residents use the laundry room again?",o:["At 3:00 p.m.","At 1:00 p.m.","At 9:00 a.m.","On Friday morning"],why:"La lavandería sigue cerrada «until 3:00 p.m.» para probar el sistema."}]},
+{title:"Notice: Recreation Center",kind:"Notice",text:"CAMPUS RECREATION CENTER — WINTER SCHEDULE\n\nStarting January 8, the pool will open at 6:30 a.m. instead of 7:00 a.m. on weekdays. Weekend hours remain unchanged.\n\nGroup fitness classes now require online registration at least 24 hours in advance. Students who miss three registered classes without cancelling will not be able to book classes for two weeks.\n\nPlease note: towels are no longer provided. Bring your own.",questions:[
+{q:"What change is being made to the pool?",o:["It will open earlier on weekdays.","It will close earlier on weekends.","It will be closed in January.","It will require online registration."],why:"Abre a las 6:30 en lugar de 7:00 entre semana."},
+{q:"What happens if a student misses three registered classes without cancelling?",o:["The student cannot book classes for two weeks.","The student must pay a fee.","The student loses pool access.","The student must register in person."],why:"«will not be able to book classes for two weeks»."},
+{q:"What can be inferred about towels?",o:["The center used to provide them.","They can be rented at the front desk.","They are only needed at the pool.","They will be provided again in spring."],why:"«no longer provided» implica que antes sí se daban."}]},
+{title:"Text messages",kind:"Text messages",text:"Jake (4:12 PM): Hey, are we still meeting at the library at 5 to work on the presentation?\nPriya (4:15 PM): Yes, but the group study rooms are all booked. Can we use the café on the second floor instead?\nJake (4:16 PM): Sure. I'll bring my laptop, but the battery is almost dead.\nPriya (4:18 PM): No problem, there are outlets near the windows. I'll save us a table there.",questions:[
+{q:"Why do they change the meeting place?",o:["The study rooms are not available.","The library closes at 5.","The café has better internet.","Jake prefers to eat while working."],why:"«the group study rooms are all booked»."},
+{q:"Why does Jake mention his battery?",o:["He will need a place to charge his laptop.","He cannot bring his laptop.","He wants to cancel the meeting.","He wants Priya to bring a charger."],why:"Priya responde que hay enchufes cerca de las ventanas."},
+{q:"What will Priya probably do?",o:["Get a table near the windows","Book a study room","Bring an extra laptop","Meet Jake at the entrance"],why:"«I'll save us a table there» (cerca de las ventanas)."}]},
+{title:"Advertisement: Green Bean Café",kind:"Advertisement",text:"GREEN BEAN CAFÉ — STUDENT SPECIAL\n\nShow your student ID between 2 and 5 p.m., Monday to Friday, and get any medium drink for $2.50. Add a pastry for just $1 more.\n\nOffer not valid on holidays or with other discounts.\n\nNEW THIS MONTH: oat milk at no extra charge!",questions:[
+{q:"When is the student special available?",o:["Weekday afternoons","Every morning","Weekends and holidays","Only during exams"],why:"De lunes a viernes, de 2 a 5 p.m."},
+{q:"What is true about oat milk?",o:["It is now free to add to a drink.","It costs $1 more.","It is only for students.","It is available on holidays only."],why:"«at no extra charge» = sin costo adicional."},
+{q:"Which customer could NOT use the offer?",o:["A student on a public holiday","A student on Tuesday at 3 p.m.","A student who buys a pastry","A student who orders oat milk"],why:"La oferta no es válida en festivos."}]}
+],
+academic:[
+{title:"Urban Heat Islands",text:"Cities are often several degrees warmer than the surrounding countryside, a phenomenon known as the urban heat island effect. The difference is usually greatest at night, when rural areas cool quickly but urban areas continue to release heat that was stored during the day.\n\nSeveral factors contribute to this effect. Materials such as asphalt and concrete absorb large amounts of solar energy and release it slowly. Tall buildings trap heat between them and reduce wind flow, which would otherwise carry warm air away. In addition, cities have fewer trees and less vegetation. Plants cool their surroundings through evapotranspiration, a process in which water evaporates from leaves and absorbs heat. Finally, cars, air conditioners, and factories **emit** waste heat directly into the air.\n\nThe consequences can be serious. Higher temperatures increase the demand for cooling, which raises electricity costs and air pollution. During heat waves, urban residents, especially the elderly, face greater health risks.\n\nFortunately, cities can reduce the effect. Planting trees, installing green roofs covered with vegetation, and using light-colored materials that reflect sunlight have all been shown to lower surface temperatures.",questions:[
+{q:"According to paragraph 1, when is the heat island effect usually strongest?",o:["At night","At midday","In winter","During storms"],why:"Párrafo 1: «The difference is usually greatest at night»."},
+{q:"The word \"emit\" in paragraph 2 is closest in meaning to",o:["release","absorb","reduce","measure"],why:"emit = liberar/emitir (release)."},
+{q:"Which of the following is NOT mentioned as a cause of the effect?",o:["Heavy rainfall in cities","Heat absorbed by asphalt","Reduced wind flow","Less vegetation"],why:"La lluvia nunca se menciona; las otras tres sí."},
+{q:"What can be inferred about evapotranspiration?",o:["It helps lower temperatures in areas with many plants.","It occurs mainly at night.","It increases the heat stored in concrete.","It is caused by air conditioners."],why:"Las plantas enfrían su entorno mediante este proceso."},
+{q:"Why does the author mention the elderly in paragraph 3?",o:["To give an example of a group especially affected by heat","To argue that elderly people should leave cities","To explain why energy demand increases","To contrast rural and urban populations"],why:"Es un ejemplo de quienes enfrentan mayor riesgo de salud."}]},
+{title:"Bioluminescence",text:"Bioluminescence is the production of light by living organisms. Although a few land animals, such as fireflies, can glow, the vast majority of bioluminescent species live in the ocean. Scientists estimate that around three-quarters of the animals in the deep sea produce their own light.\n\nThe light results from a chemical reaction. A molecule called luciferin reacts with oxygen, with the help of an enzyme called luciferase, and releases energy in the form of light. Remarkably, very little heat is produced, which is why bioluminescence is sometimes described as cold light.\n\nMarine organisms use light in diverse ways. The anglerfish has a glowing lure that hangs in front of its mouth and attracts curious prey. Some squid release clouds of glowing fluid to **distract** predators while they escape. Other animals use counterillumination: by producing light on their undersides that matches the faint sunlight from above, they make their silhouettes nearly invisible to predators looking up from below.\n\nResearchers have also found practical applications. Genes for light-producing proteins are now used in laboratories to track how cells and diseases develop.",questions:[
+{q:"According to paragraph 1, which statement is true?",o:["Most bioluminescent species live in the ocean.","Fireflies are the most common bioluminescent animals.","Few deep-sea animals produce light.","Bioluminescence is found only on land."],why:"«the vast majority of bioluminescent species live in the ocean»."},
+{q:"Why is bioluminescence called \"cold light\"?",o:["Very little heat is produced.","It occurs only in cold water.","It requires low temperatures.","It is always blue."],why:"«very little heat is produced, which is why…»."},
+{q:"The word \"distract\" in paragraph 3 is closest in meaning to",o:["divert the attention of","attack","attract","frighten away"],why:"distract = desviar la atención."},
+{q:"What is the purpose of counterillumination?",o:["To hide an animal's shape from predators below","To attract prey from above","To communicate with mates","To keep the body warm"],why:"Hace la silueta casi invisible para depredadores que miran desde abajo."},
+{q:"What is the main purpose of paragraph 4?",o:["To show that bioluminescence has uses in science","To describe a new deep-sea species","To explain how luciferin is made","To question earlier research"],why:"Habla de aplicaciones prácticas en laboratorios."}]},
+{title:"The Domestication of Maize",text:"Maize, also known as corn, is one of the most widely grown crops in the world, yet its wild ancestor looks remarkably different. For many years, the origin of maize puzzled botanists because no wild plant resembled it closely. Today, most researchers agree that maize was domesticated from teosinte, a wild grass native to southern Mexico, about 9,000 years ago.\n\nTeosinte produces small ears with only five to twelve kernels, each enclosed in a hard shell. Early farmers gradually selected plants with desirable traits, such as larger ears and softer kernels, and saved their seeds for the next season. Over thousands of generations, this process of artificial selection transformed the plant.\n\nGenetic studies support this account. Researchers have identified a small number of genes responsible for major differences between teosinte and maize, including one that controls the hard casing around the kernels. Archaeological evidence from caves in the Oaxaca Valley, where ancient corn cobs were preserved, shows that cobs grew steadily larger over time.\n\nFrom Mexico, maize spread throughout the Americas. Its **adaptability** allowed it to thrive from the high Andes to the river valleys of North America, and it became the foundation of many civilizations.",questions:[
+{q:"Why did the origin of maize puzzle botanists for many years?",o:["No wild plant closely resembled it.","It grew only in caves.","Its genes could not be studied.","It spread too quickly to trace."],why:"«no wild plant resembled it closely»."},
+{q:"According to paragraph 2, what did early farmers do?",o:["Saved seeds from plants with useful traits","Crossed maize with other grains","Removed the hard shells by hand","Planted teosinte in caves"],why:"Seleccionaron plantas con rasgos deseables y guardaron sus semillas."},
+{q:"The word \"adaptability\" in paragraph 4 is closest in meaning to",o:["ability to adjust to different conditions","high nutritional value","rapid growth","resistance to insects"],why:"adaptability = capacidad de adaptarse."},
+{q:"What does the evidence from the Oaxaca Valley show?",o:["Corn cobs became larger over time.","Teosinte was first grown in caves.","Maize was domesticated in the Andes.","Farmers stored maize underground."],why:"«cobs grew steadily larger over time»."},
+{q:"Which of the following can be inferred from paragraph 3?",o:["Small genetic changes can produce large differences in a plant.","Teosinte no longer exists in Mexico.","Maize was domesticated in a few generations.","Genetic studies contradict archaeological evidence."],why:"Pocos genes explican grandes diferencias entre teosinte y maíz."}]},
+{title:"The Origins of Writing",text:"Writing is one of humanity's most important inventions, and the earliest known system developed in Mesopotamia, in what is now Iraq, around 3200 BCE. Surprisingly, it did not begin as a way to record stories or laws. Instead, it emerged from the practical needs of economic record-keeping.\n\nAs cities grew, temples and officials needed to track goods such as grain, livestock, and textiles. At first, they used small clay tokens of different shapes to represent quantities of goods. Later, these tokens were pressed into the surface of clay envelopes, leaving marks. Eventually, people realized that the marks alone were sufficient, and the tokens became unnecessary.\n\nThe resulting script, known as cuneiform, consisted of wedge-shaped marks made with a reed stylus on wet clay. Early signs were pictures of objects, but over time they became more abstract and began to represent sounds. This **shift** allowed scribes to write names, verbs, and eventually entire narratives, such as the Epic of Gilgamesh.\n\nLearning cuneiform required years of training, so literacy remained limited to a small class of professional scribes.",questions:[
+{q:"According to paragraph 1, why was writing first developed?",o:["To keep economic records","To record laws","To preserve stories","To communicate with distant cities"],why:"«emerged from the practical needs of economic record-keeping»."},
+{q:"What was the role of the clay tokens?",o:["They represented quantities of goods.","They were used as money.","They were religious decorations.","They were used to teach children."],why:"«to represent quantities of goods»."},
+{q:"The word \"shift\" in paragraph 3 is closest in meaning to",o:["change","error","delay","rule"],why:"shift = cambio."},
+{q:"Which of the following is NOT true of cuneiform?",o:["It was written with ink on paper.","It was made with a reed stylus.","Its signs became more abstract.","It came to represent sounds."],why:"Se escribía sobre arcilla húmeda, no con tinta sobre papel."},
+{q:"What can be inferred from paragraph 4?",o:["Most people in Mesopotamia could not read or write.","Cuneiform was easy to learn.","Scribes were usually children.","Literacy spread rapidly."],why:"La alfabetización quedó limitada a una pequeña clase de escribas."}]}
+],
+respond:[
+{prompt:"Do you know where I can print my assignment?",o:["There's a printer in the computer lab on the first floor.","Yes, I finished it last night.","I usually print in color.","The assignment is due on Friday."]},
+{prompt:"Would you mind if I opened the window?",o:["Not at all, it's pretty warm in here.","Yes, I opened it yesterday.","The window faces the parking lot.","I don't mind the snow."]},
+{prompt:"Why didn't you come to the review session yesterday?",o:["I had a doctor's appointment I couldn't move.","The review session is very useful.","Yes, I came at three.","I'll review the session notes."]},
+{prompt:"Professor Kim's office hours have been moved to Wednesday.",o:["Thanks, I'll go see her then instead.","Her office is on the third floor.","I moved last Wednesday.","Yes, she's a great professor."]},
+{prompt:"How long did it take you to finish the reading?",o:["About two hours, but I skimmed some parts.","It was on page forty.","I read it in the library.","It's a very long book."]},
+{prompt:"I can't decide whether to take biology or chemistry next semester.",o:["Which one fits better with your major?","I took it last semester.","The semester starts in August.","Biology is the study of life."]},
+{prompt:"Isn't the cafeteria closed on Sundays?",o:["Only in the summer. It's open today.","I don't really like Sundays.","The cafeteria serves pasta.","Yes, I closed it early."]},
+{prompt:"Could you send me the notes from today's lecture?",o:["Sure, I'll email them to you tonight.","The lecture was about economics.","I sent a letter last week.","The professor speaks quickly."]},
+{prompt:"The shuttle to the airport leaves in ten minutes.",o:["Then we'd better hurry and finish packing.","The airport is very big.","I left ten minutes ago.","It's a comfortable shuttle."]},
+{prompt:"Have you decided on a topic for your research paper?",o:["I'm leaning toward something on renewable energy.","The paper is ten pages long.","I decided to take the bus.","Research takes a lot of time."]}
+],
+conv:[
+{title:"Student and academic advisor",lines:[
+{v:0,t:"Hi, Dr. Patel. Do you have a minute? I'm thinking about dropping my statistics course."},
+{v:1,t:"Of course. What's going on? Your midterm grade looked fine."},
+{v:0,t:"The grade is okay, but I'm working twenty hours a week at the bookstore, and the problem sets take me forever. I'm falling behind in my other classes."},
+{v:1,t:"I see. Before you drop it, keep in mind that statistics is required for your psychology major. If you drop it now, you'd have to take it next fall, and that could delay your research methods course."},
+{v:0,t:"Oh, I didn't realize it was a prerequisite."},
+{v:1,t:"It is. Have you tried the free tutoring center? They have statistics tutors every afternoon. Another option is to ask your manager to reduce your hours until finals."},
+{v:0,t:"That might work. I'll try the tutoring first, and if I'm still struggling, I'll talk to my manager."}],
+questions:[
+{q:"Why does the student want to drop the course?",o:["She has too much work and is falling behind.","Her midterm grade was low.","She dislikes the professor.","The class conflicts with her job schedule."],why:"Trabaja 20 horas y los problemas le toman mucho tiempo."},
+{q:"Why does the advisor mention the research methods course?",o:["Dropping statistics could delay it.","It is easier than statistics.","It is offered only in the fall.","The student should take it instead."],why:"Estadística es prerrequisito; retirarla retrasaría ese curso."},
+{q:"What will the student probably do first?",o:["Visit the tutoring center","Talk to her manager","Drop the course","Change her major"],why:"«I'll try the tutoring first»."}]},
+{title:"Student and librarian",lines:[
+{v:0,t:"Excuse me, I'm looking for a book my professor put on reserve. It's called Introduction to Marine Ecology."},
+{v:1,t:"Reserve items are kept behind this desk. Let me check. Yes, we have two copies, but both are checked out right now. They're due back in about an hour."},
+{v:0,t:"An hour? I have a class at two. Can I reserve the next copy?"},
+{v:1,t:"Unfortunately, reserve books can't be held. It's first come, first served. But the chapters your professor assigned might be available online. Many instructors upload them to the course website."},
+{v:0,t:"Really? I didn't check there. I'll look now."},
+{v:1,t:"And if they're not there, remember that reserve copies can only be borrowed for two hours. Come back right after your class. Late afternoon is usually quieter."}],
+questions:[
+{q:"What is the student's problem?",o:["Both copies of the book are checked out.","The library does not own the book.","She lost a reserve book.","Her professor removed the book from reserve."],why:"Las dos copias están prestadas."},
+{q:"What does the librarian suggest?",o:["Checking the course website for the chapters","Buying the book at the bookstore","Asking the professor for an extension","Reserving the book online"],why:"Muchos profesores suben los capítulos al sitio del curso."},
+{q:"What can be inferred about reserve books?",o:["They are lent for short periods and cannot be held.","They can be taken home overnight.","They are only for graduate students.","They are usually available online."],why:"Préstamo de 2 horas y no se pueden apartar."}]}
+],
+announce:[
+{title:"Biology lab announcement",lines:[{v:2,t:"Attention, all students in Introduction to Biology. Tomorrow's lab session will not take place in Room 210 as scheduled. Because of a ventilation problem, all lab sections are moving to Room 118 in the Chemistry Building. Please remember to wear closed-toe shoes and bring your lab notebook. Students who arrive without proper shoes will not be allowed to participate. Thank you."}],
+questions:[
+{q:"Why is the lab session being moved?",o:["There is a ventilation problem.","Room 210 is too small.","The Chemistry Building has new equipment.","The instructor is unavailable."],why:"«Because of a ventilation problem»."},
+{q:"What will happen to students without proper shoes?",o:["They cannot take part in the lab.","They will lose points.","They must go to Room 210.","They will receive shoes at the door."],why:"«will not be allowed to participate»."}]},
+{title:"Career fair reminder",lines:[{v:2,t:"Good morning, everyone. This is a reminder that the university career fair takes place this Friday from ten to three in the Student Union ballroom. More than sixty employers will attend, including several that are hiring summer interns. To help you prepare, the career center will review résumés for free on Wednesday and Thursday afternoons. No appointment is needed. Business casual dress is recommended."}],
+questions:[
+{q:"What is the main purpose of the announcement?",o:["To remind students about an upcoming career fair","To announce new summer courses","To introduce a new career center director","To change the location of an event"],why:"Es un recordatorio de la feria laboral."},
+{q:"What does the career center offer before the fair?",o:["Free résumé reviews without an appointment","Paid interview workshops","Business clothing for students","Transportation to the fair"],why:"Revisión gratuita de hojas de vida, sin cita."}]}
+],
+talk:[
+{title:"Botany: Why leaves change color",lines:[
+{v:3,t:"Today, let's look at why tree leaves change color in autumn. Many people think the red and yellow colors are produced in the fall, but that's only partly true."},
+{v:3,t:"Leaves contain several pigments. The most abundant is chlorophyll, which is green and absorbs sunlight for photosynthesis. Leaves also contain yellow and orange pigments called carotenoids. During the summer, there's so much chlorophyll that it hides the carotenoids."},
+{v:3,t:"As days get shorter and temperatures drop, trees stop producing chlorophyll, and the existing chlorophyll breaks down. That's when the yellow and orange colors, which were there all along, become visible."},
+{v:3,t:"Red is different. Red pigments, called anthocyanins, are actually produced in autumn by some species. One hypothesis is that anthocyanins protect the leaves from too much light while the tree recovers valuable nutrients, like nitrogen, before the leaves fall."}],
+questions:[
+{q:"What is the lecture mainly about?",o:["The reasons leaves change color in autumn","How photosynthesis produces sugar","Why some trees keep their leaves in winter","How nitrogen is absorbed from soil"],why:"El tema central es el cambio de color de las hojas."},
+{q:"According to the professor, what happens to carotenoids in autumn?",o:["They become visible because chlorophyll breaks down.","They are produced for the first time.","They turn into anthocyanins.","They absorb more sunlight."],why:"Siempre estuvieron ahí; se ven cuando desaparece la clorofila."},
+{q:"Why might some trees produce anthocyanins?",o:["To protect leaves while nutrients are recovered","To attract insects","To speed up leaf fall","To store water for winter"],why:"Hipótesis: protegen la hoja mientras el árbol recupera nutrientes."},
+{q:"Why does the professor say \"Many people think the colors are produced in the fall\"?",o:["To introduce a common belief she will partly correct","To show that the public is always wrong","To summarize the previous class","To change the topic of the lecture"],why:"Presenta una idea popular que luego matiza («only partly true»)."}]},
+{title:"Psychology: Sleep and memory",lines:[
+{v:1,t:"In our last class, we discussed short-term memory. Today I want to connect memory to something we all do every night: sleep."},
+{v:1,t:"For a long time, scientists believed sleep was simply a period of rest for the brain. We now know the brain is very active while we sleep. During deep sleep, the hippocampus, a region involved in forming new memories, replays the day's experiences. This replay seems to help transfer information to the cortex, where it can be stored for the long term."},
+{v:1,t:"In one well-known study, participants learned a list of word pairs. Half of them slept for eight hours, and the other half stayed awake. When tested the next day, the group that slept remembered significantly more word pairs."},
+{v:1,t:"So, the next time you're tempted to stay up all night before an exam, remember that you might be undermining the very learning you're trying to achieve."}],
+questions:[
+{q:"What is the main idea of the lecture?",o:["Sleep plays an active role in forming long-term memories.","Short-term memory is more important than long-term memory.","The brain rests completely during sleep.","Students should study in groups."],why:"Conecta el sueño con la consolidación de la memoria."},
+{q:"What does the hippocampus do during deep sleep?",o:["It replays the day's experiences.","It stops working completely.","It erases unnecessary memories.","It controls breathing."],why:"«replays the day's experiences»."},
+{q:"Why does the professor describe the word-pair study?",o:["To support the claim that sleep improves memory","To show that the study had flaws","To explain how word pairs are created","To compare two types of memory"],why:"El grupo que durmió recordó más: evidencia para su argumento."},
+{q:"What does the professor imply about staying up all night before an exam?",o:["It may hurt the learning students want.","It is the best way to prepare.","It only affects short-term memory.","It is necessary for difficult exams."],why:"«you might be undermining the very learning…»."}]}
+],
+build:[
+{ctx:"What did you think of the guest lecture?",answer:"It was more interesting than I expected."},
+{ctx:"Are you going to the study group tonight?",answer:"I can't go because I have to work late."},
+{ctx:"Where should we meet for the project?",answer:"Let's meet in front of the main library."},
+{ctx:"Have you submitted your application yet?",answer:"I am still waiting for my reference letter."},
+{ctx:"Why was the field trip cancelled?",answer:"The bus company did not have any drivers available."},
+{ctx:"I need to visit the museum for my art class.",answer:"Do you know what time it opens on Saturday?"},
+{ctx:"The professor wants us to revise our essays.",answer:"She said our conclusions needed more evidence."},
+{ctx:"How was your internship this summer?",answer:"I learned how to analyze data with new software."},
+{ctx:"Is the new café on campus any good?",answer:"The coffee is great but the lines are very long."},
+{ctx:"Can you help me move this weekend?",answer:"I would be happy to help if you need me."}
+],
+email:[
+{situation:"You recently bought a used textbook from an online campus marketplace. When it arrived, several chapters were missing. Write an email to the seller.",bullets:["Explain the problem","Describe what you would like the seller to do","Suggest how you could arrange this"]},
+{situation:"Your study group wants to organize a review session before the final exam. Write an email to your professor.",bullets:["Explain the purpose of the session","Ask for a room or other resources","Ask whether the professor could attend"]},
+{situation:"You volunteered at a community event last weekend. Write an email to the organizer, Ms. Rivera.",bullets:["Thank her and say what you enjoyed","Mention something that could be improved","Offer to help with future events"]},
+{situation:"Your roommate has been playing loud music late at night, and you have an early class. Write an email to your roommate.",bullets:["Describe the situation politely","Explain how it affects you","Propose a solution"]}
+],
+discussion:[
+{profName:"Dr. Ramirez",course:"Urban Planning",prof:"Many cities are considering banning private cars from their downtown areas. Supporters say it reduces pollution and makes streets safer. Others argue it hurts local businesses and makes life harder for people who live far away. Should cities ban cars from their city centers? Why or why not?",students:[{name:"Kelly",text:"I think cities should ban cars downtown. When I visited a city center without cars, the air was cleaner and people walked and shopped more. It felt more like a community space."},{name:"Marcus",text:"I understand the benefits, but a ban could be unfair to older people and to workers who make deliveries. Cities should improve public transportation first, and only then limit cars."}]},
+{profName:"Dr. Chen",course:"Education",prof:"Online courses have become very common at universities. Some educators believe that students learn just as well online as in a traditional classroom. Others think face-to-face interaction is essential. In your opinion, is online learning as effective as classroom learning? Explain.",students:[{name:"Aisha",text:"Online learning can be just as effective because students can review recorded lectures as many times as they need. That helps people who learn at different speeds."},{name:"Tom",text:"I disagree. In a classroom, you can ask questions immediately and work with classmates. Online, many students get distracted and lose motivation."}]},
+{profName:"Dr. Okafor",course:"Agricultural Economics",prof:"Governments want to guarantee food security for growing populations. Some argue that public money should support small family farms. Others say it is better to invest in large-scale agricultural technology. Which approach should governments prioritize, and why?",students:[{name:"Lucia",text:"Supporting small farms is better. They protect local traditions, create jobs in rural areas, and often grow a wider variety of crops."},{name:"Daniel",text:"Large-scale technology is the only way to produce enough food. Precision irrigation and better seeds can increase yields while using fewer resources."}]}
+],
+repeat:[
+{context:"Campus tour",sentences:["Welcome to the campus.","The library is open until midnight.","Please take a map before we start the tour.","Students can borrow laptops from the front desk.","The science building was renovated two years ago.","Free shuttle buses run every fifteen minutes during the semester.","Before registering for classes, all new students must meet with an academic advisor."]},
+{context:"Museum guide",sentences:["Please follow me.","This room contains ancient pottery.","Photography is allowed without a flash.","These tools were found near the river last year.","The museum offers guided tours in four languages.","If you would like to see the special exhibit, you will need a separate ticket.","The gift shop on the ground floor sells books about the history of the region."]},
+{context:"Science lab orientation",sentences:["Wear your safety glasses.","Wash your hands before leaving the lab.","All chemicals must be labeled clearly.","Report any broken equipment to the lab assistant.","Never eat or drink while you are working in the laboratory.","At the end of each session, return the materials to the shelves where you found them.","If an alarm sounds, leave the building calmly through the nearest emergency exit."]}
+],
+interview:[
+{topic:"Studies and learning",qs:["Tell me a little about what you are studying now or what you do.","How do you usually prepare for an important exam?","Some people prefer to study alone, while others prefer to study in groups. Which do you prefer, and why?","Do you think universities should require students to take courses outside their major? Explain your opinion."]},
+{topic:"Cities and the environment",qs:["Describe the place where you grew up.","What is one change that would improve transportation in your city?","Is it better to live in a big city or a small town when you are young? Why?","Some people say individuals cannot do much to protect the environment. Do you agree or disagree? Why?"]},
+{topic:"Work and the future",qs:["What kind of job would you like to have in the future?","Tell me about a skill you learned recently and how you learned it.","Should companies allow employees to work from home? Why or why not?","In your opinion, what is the most important quality of a good teacher?"]}
+]};
+
+const VOCAB=[["abundant","adj.","existing in large quantities","abundante"],["accumulate","v.","to gather or collect over time","acumular"],["adequate","adj.","enough for a purpose","adecuado, suficiente"],["advocate","v.","to publicly support","defender, abogar por"],["allocate","v.","to distribute for a purpose","asignar"],["ambiguous","adj.","having more than one meaning","ambiguo"],["anticipate","v.","to expect or predict","prever, anticipar"],["arbitrary","adj.","based on chance, not reason","arbitrario"],["assess","v.","to evaluate","evaluar"],["attribute","v.","to say something is caused by","atribuir"],["coherent","adj.","logical and consistent","coherente"],["compile","v.","to collect into one list or work","recopilar"],["comprise","v.","to consist of","constar de, comprender"],["consequence","n.","a result of an action","consecuencia"],["constrain","v.","to limit or restrict","restringir"],["contradict","v.","to say the opposite of","contradecir"],["crucial","adj.","extremely important","crucial"],["decline","v.","to decrease","disminuir, decaer"],["deduce","v.","to reach a conclusion by reasoning","deducir"],["deplete","v.","to use up a supply","agotar"],["derive","v.","to obtain from a source","derivar, obtener"],["diminish","v.","to become smaller","disminuir"],["disperse","v.","to spread over a wide area","dispersar"],["distinct","adj.","clearly different","distinto, claro"],["diverse","adj.","showing variety","diverso"],["enhance","v.","to improve","mejorar, realzar"],["erode","v.","to wear away gradually","erosionar"],["evident","adj.","clearly seen or understood","evidente"],["exceed","v.","to go beyond","exceder, superar"],["facilitate","v.","to make easier","facilitar"],["fluctuate","v.","to rise and fall irregularly","fluctuar"],["hypothesis","n.","a proposed explanation to test","hipótesis"],["implement","v.","to put into action","implementar"],["inevitable","adj.","certain to happen","inevitable"],["infer","v.","to conclude from evidence","inferir"],["inhibit","v.","to slow or prevent","inhibir"],["integrate","v.","to combine into a whole","integrar"],["mitigate","v.","to make less severe","mitigar"],["notion","n.","an idea or belief","noción"],["offset","v.","to balance or compensate","compensar"],["plausible","adj.","seeming reasonable","verosímil, plausible"],["predominant","adj.","most common or strongest","predominante"],["preliminary","adj.","coming before the main part","preliminar"],["prevalent","adj.","widespread","extendido, común"],["reluctant","adj.","unwilling","reacio"],["scarce","adj.","not enough; rare","escaso"],["subsequent","adj.","coming after","posterior"],["sustain","v.","to keep going; support","sostener, mantener"],["undermine","v.","to weaken gradually","socavar, debilitar"],["viable","adj.","able to work successfully","viable"],["vulnerable","adj.","easily harmed","vulnerable"],["yield","n.","the amount produced","rendimiento, cosecha"]];
+
+const EXTRA={
+ctest:[
+{title:"Glaciers",text:"Glaciers are large masses of ice that move slowly over land. They form in places where more snow falls in winter than melts in summer. Over many years, the snow is compressed into dense ice. As glaciers move, they carve valleys and carry rocks over great distances. Today, most glaciers are shrinking because of rising global temperatures."},
+{title:"Migration of birds",text:"Many birds travel long distances every year. They leave their breeding areas when food becomes scarce in autumn. Some species fly thousands of kilometers to reach warmer regions. Scientists believe that birds use the sun, the stars, and the magnetic field of the Earth to navigate. Young birds often complete the journey without any help from adults."},
+{title:"Remote work",text:"Remote work has become common in many industries. Employees can now complete their tasks from home using computers and the internet. Many workers appreciate the time they save by not commuting. However, some people feel isolated and miss the contact with their colleagues. Companies are therefore experimenting with hybrid schedules that combine both options."},
+{title:"Soil and farming",text:"Healthy soil is the foundation of agriculture. It contains minerals, water, air, and countless living organisms. These organisms break down dead plants and release nutrients that crops need to grow. When farmers plow too often or leave fields bare, the soil can lose its structure. Practices such as crop rotation and cover crops help keep the land productive."},
+{title:"Music and the brain",text:"Music affects the human brain in remarkable ways. Listening to a favorite song can release chemicals that make people feel happy. Researchers have also discovered that learning an instrument strengthens connections between different areas of the brain. Children who study music sometimes perform better in reading and mathematics. For older adults, music may help protect memory."}
+],
+daily:[
+{title:"Email: Course registration",kind:"Email",text:"From: Registrar's Office\nTo: All undergraduate students\nSubject: Registration for spring courses\n\nDear students,\n\nRegistration for spring courses opens on Monday, November 3, at 8:00 a.m. Seniors may register first, followed by juniors on Tuesday and all other students on Wednesday.\n\nBefore registering, please make sure you have no outstanding library fines or unpaid fees, as these will block your account. You can check your status in the student portal.\n\nIf a course is full, you may join the waiting list. Students on a waiting list will be notified by email if a seat becomes available.\n\nRegistrar's Office",questions:[
+{q:"When can a sophomore register?",o:["On Wednesday","On Monday","On Tuesday","At any time after 8:00 a.m. Monday"],why:"Los seniors el lunes, los juniors el martes y los demás (incluidos sophomores) el miércoles."},
+{q:"What could prevent a student from registering?",o:["An unpaid library fine","Joining a waiting list","Checking the student portal","Registering on the wrong day"],why:"Multas y deudas pendientes «will block your account»."},
+{q:"What happens when a seat opens in a full course?",o:["Students on the waiting list receive an email.","Seniors get the seat automatically.","The course moves to a larger room.","Students must call the office."],why:"«will be notified by email if a seat becomes available»."}]},
+{title:"Notice: Lost and found",kind:"Notice",text:"LOST AND FOUND — STUDENT CENTER\n\nItems found on campus are kept at the information desk on the first floor for 30 days. After that, unclaimed clothing is donated to a local charity, and electronic devices are recycled.\n\nTo claim an item, describe it in detail and show a valid photo ID. Keys and student ID cards are sent directly to Campus Security, located next to the main parking lot.\n\nOpen Monday to Friday, 9 a.m. to 6 p.m.",questions:[
+{q:"Where should a student go to look for lost keys?",o:["Campus Security","The information desk","A local charity","The recycling center"],why:"Las llaves se envían directamente a Campus Security."},
+{q:"What happens to a jacket that nobody claims after 30 days?",o:["It is given to a charity.","It is sent to Campus Security.","It is recycled.","It is kept for another month."],why:"La ropa no reclamada se dona."},
+{q:"What must a person do to claim an item?",o:["Describe it and show identification","Pay a small fee","Fill out an online form","Come on a weekend"],why:"Describirlo en detalle y mostrar un documento con foto."}]},
+{title:"Social media post: Book club",kind:"Social media post",text:"Riverside Library Book Club\n\nGreat news, readers! Because so many of you joined this fall, we're adding a second meeting each month. Starting in January, we'll meet on the first Tuesday evening AND the third Saturday morning.\n\nThis month's book is The Quiet River. Copies are available at the front desk, but there are only 12, so ask early. An audio version is free on the library app.\n\nComment below with your suggestions for next month!",questions:[
+{q:"Why is the book club adding a meeting?",o:["More people have joined.","The library is open longer.","Members asked to meet on Saturdays only.","The book is very long."],why:"«Because so many of you joined»."},
+{q:"What is suggested about the printed copies?",o:["They may run out quickly.","They must be bought.","They are only for new members.","They will arrive in January."],why:"Solo hay 12 copias, «so ask early»."},
+{q:"What are readers invited to do?",o:["Suggest the next book","Record an audio version","Volunteer at the front desk","Change the meeting time"],why:"«Comment below with your suggestions for next month»."}]},
+{title:"Schedule: Weekend shuttle",kind:"Schedule",text:"CAMPUS SHUTTLE — WEEKEND SERVICE\n\nRoute A (Campus – Downtown): every 30 minutes, 8:00 a.m. – 10:00 p.m.\nRoute B (Campus – Shopping Mall): every hour, 10:00 a.m. – 6:00 p.m.\nRoute C (Campus – Train Station): 7:00 a.m., 12:00 p.m., 5:00 p.m. only\n\nThe shuttle is free with a student ID. Visitors pay $2 per ride (exact change only).\nNo service on the weekend of December 20–21.",questions:[
+{q:"A student needs to catch an evening train on Saturday. Which shuttle should she take?",o:["Route C at 5:00 p.m.","Route A at any time","Route B at 6:00 p.m.","Route C at 7:00 p.m."],why:"La ruta C a la estación sale solo a las 7, 12 y 5 p.m."},
+{q:"What is true about visitors?",o:["They must have exact change.","They ride for free.","They can only use Route A.","They need a student ID."],why:"«Visitors pay $2 per ride (exact change only)»."},
+{q:"Which route runs most frequently?",o:["Route A","Route B","Route C","All routes run equally often"],why:"La ruta A pasa cada 30 minutos."}]}
+],
+academic:[
+{title:"The Decline of Honeybee Colonies",text:"Since the early 2000s, beekeepers in many countries have reported unusually high losses of honeybee colonies. In some cases, the worker bees simply disappeared, leaving behind the queen, the food stores, and the young bees. This pattern became known as colony collapse disorder.\n\nResearchers have proposed several explanations. One factor is the varroa mite, a parasite that feeds on bees and spreads viruses within the hive. Another is a group of pesticides called neonicotinoids, which can impair the bees' ability to navigate back to the hive. Poor nutrition also plays a role: in landscapes dominated by a single crop, bees have access to pollen from only one type of plant for much of the year.\n\nMost scientists now believe that no single cause is responsible. Instead, these stresses appear to **interact**, so that a colony weakened by poor nutrition is less able to resist parasites and disease.\n\nThe losses matter far beyond the honey industry. Honeybees pollinate crops such as almonds, apples, and blueberries, and farmers often rent hives to ensure a good harvest.",questions:[
+{q:"What was unusual about colony collapse disorder?",o:["Worker bees disappeared while the queen and food remained.","Queens left the hive with the workers.","Hives were destroyed by animals.","Bees stopped producing honey but stayed in the hive."],why:"Desaparecían las obreras dejando a la reina, la comida y las crías."},
+{q:"According to paragraph 2, how do neonicotinoids affect bees?",o:["They make it harder for bees to find their way home.","They spread viruses within the hive.","They reduce the amount of pollen available.","They kill the queen."],why:"«impair the bees' ability to navigate back to the hive»."},
+{q:"The word \"interact\" in paragraph 3 is closest in meaning to",o:["affect each other","disappear","develop slowly","balance out"],why:"interact = influirse mutuamente."},
+{q:"Why does the author mention landscapes dominated by a single crop?",o:["To explain how bees may receive poor nutrition","To argue that farmers should grow only almonds","To show where varroa mites live","To describe the ideal environment for bees"],why:"Ilustra por qué la nutrición de las abejas es pobre."},
+{q:"What can be inferred from paragraph 4?",o:["Colony losses can affect food production.","Farmers no longer need honeybees.","Honey prices have fallen.","Blueberries do not require pollination."],why:"Las abejas polinizan cultivos y los agricultores alquilan colmenas."}]},
+{title:"The Industrial Revolution and Cities",text:"Before the eighteenth century, most people in Europe lived in rural villages and worked in agriculture. The Industrial Revolution, which began in Britain around 1760, changed this pattern dramatically. New machines, powered first by water and later by steam, made it possible to produce textiles and other goods in large factories.\n\nFactories needed many workers, and they were usually built near rivers, coal fields, or ports. As a result, people moved from the countryside to growing industrial towns in search of employment. Manchester, for example, grew from a small market town into one of the largest cities in Britain within a few decades.\n\nThis rapid growth created serious problems. Housing was built quickly and cheaply, and many families lived in crowded rooms without clean water. Diseases such as cholera spread easily. Over time, these conditions led to reforms, including public sanitation systems and laws that limited working hours.\n\nThe shift from rural to urban life that started in Britain eventually spread across the world, and it continues today in many developing countries.",questions:[
+{q:"What made large-scale factory production possible?",o:["New machines powered by water and steam","An increase in rural villages","Laws that limited working hours","The discovery of cholera"],why:"Las máquinas impulsadas por agua y vapor."},
+{q:"Why were factories often built near rivers or coal fields?",o:["The passage implies they needed sources of power and materials.","Workers preferred to live in the countryside.","The government required it.","Cities were not allowed there."],why:"Se ubicaban cerca de fuentes de energía y transporte."},
+{q:"Why does the author mention Manchester?",o:["To give an example of rapid urban growth","To describe a typical rural village","To explain the origins of steam power","To compare Britain with other countries"],why:"Ejemplo de ciudad que creció muy rápido."},
+{q:"Which of the following is NOT mentioned as a problem of industrial towns?",o:["High taxes on factory owners","Crowded housing","Lack of clean water","The spread of disease"],why:"Los impuestos no se mencionan."},
+{q:"According to paragraph 3, what eventually resulted from poor living conditions?",o:["Reforms such as sanitation systems","The closing of factories","A return to rural life","The end of the Industrial Revolution"],why:"«these conditions led to reforms»."}]},
+{title:"How Stars Are Born",text:"Stars form inside enormous clouds of gas and dust called nebulae. These clouds are mostly hydrogen and can stretch across many light-years. Although nebulae may appear calm, they are constantly disturbed by forces such as the shock waves from nearby exploding stars.\n\nWhen part of a nebula becomes dense enough, gravity causes it to collapse inward. As the material contracts, it begins to spin and heat up, forming a hot core known as a protostar. Surrounding material flattens into a rotating disk, which may later give rise to planets.\n\nThe protostar continues to gather mass for hundreds of thousands of years. When the temperature at its center reaches about ten million degrees, hydrogen atoms begin to fuse into helium, releasing tremendous energy. At this point, a true star is born. The outward pressure from this energy **counteracts** the inward pull of gravity, and the star becomes stable.\n\nHow long a star lives depends mainly on its mass. Surprisingly, massive stars burn their fuel much faster than smaller ones and may last only a few million years.",questions:[
+{q:"According to paragraph 1, what can disturb a nebula?",o:["Shock waves from exploding stars","The heat of protostars","The rotation of planets","Helium released by stars"],why:"«shock waves from nearby exploding stars»."},
+{q:"What may form from the rotating disk around a protostar?",o:["Planets","New nebulae","Helium atoms","Exploding stars"],why:"«may later give rise to planets»."},
+{q:"The word \"counteracts\" in paragraph 3 is closest in meaning to",o:["works against","increases","depends on","follows"],why:"counteract = contrarrestar."},
+{q:"When does a true star form?",o:["When hydrogen begins to fuse into helium","When the nebula first appears","When the disk becomes flat","When gravity stops acting"],why:"La fusión de hidrógeno en helio marca el nacimiento."},
+{q:"What is surprising about massive stars?",o:["They have shorter lives than smaller stars.","They never become stable.","They contain no hydrogen.","They form without gravity."],why:"Consumen su combustible más rápido y viven menos."}]},
+{title:"Language Acquisition in Children",text:"Children around the world learn their first language with remarkable speed. By the age of five, most children can produce complex sentences and understand thousands of words, even though nobody teaches them grammar rules directly.\n\nFor much of the twentieth century, many psychologists believed that children learned language mainly by imitating adults and being rewarded for correct speech. However, this view could not explain why children produce forms they have never heard, such as \"goed\" instead of \"went.\" Such errors suggest that children are actively discovering patterns and applying them, sometimes too broadly.\n\nThe linguist Noam Chomsky proposed that humans are born with an innate capacity for language. According to this idea, children are biologically prepared to detect the structure of whatever language surrounds them. Other researchers emphasize the role of social interaction, noting that children who hear more speech directed at them tend to develop larger vocabularies.\n\nToday, many scholars accept that both biology and experience are **essential**, and research focuses on how the two work together.",questions:[
+{q:"What does the passage say about children by age five?",o:["They can produce complex sentences.","They have studied grammar rules.","They speak several languages.","They make no errors."],why:"«most children can produce complex sentences»."},
+{q:"Why does the author mention the word \"goed\"?",o:["To show that children apply patterns they have discovered","To prove that children imitate adults exactly","To give an example of a correct past tense","To criticize parents' speech"],why:"Muestra que los niños generalizan reglas."},
+{q:"According to paragraph 3, what did Chomsky propose?",o:["Humans are born with a capacity for language.","Children learn only through rewards.","Social interaction is unimportant.","Vocabulary depends on schooling."],why:"Capacidad innata para el lenguaje."},
+{q:"The word \"essential\" in paragraph 4 is closest in meaning to",o:["necessary","harmful","optional","familiar"],why:"essential = necesario."},
+{q:"What is the main purpose of the passage?",o:["To describe different explanations of how children learn language","To argue that imitation is the only way to learn","To teach parents how to correct errors","To compare languages around the world"],why:"Presenta varias teorías sobre la adquisición."}]}
+],
+respond:[
+{prompt:"I'm going to the bookstore. Do you need anything?",o:["Could you get me a blue notebook?","I read that book last year.","The bookstore is closed for good.","Yes, I need to go there."]},
+{prompt:"Our group presentation got moved up to Monday.",o:["Then we'll have to meet this weekend.","I presented it on Monday.","The group is very large.","Move it up to the shelf."]},
+{prompt:"You look exhausted. Did you stay up late?",o:["Yes, I was finishing my lab report.","I look at the board every day.","No, it's not late yet.","I stayed in the dorm."]},
+{prompt:"Which bus goes to the science museum?",o:["Take the number twelve from the main gate.","The museum has a dinosaur exhibit.","I usually take the bus.","Science is my favorite subject."]},
+{prompt:"Should I bring anything to the potluck dinner?",o:["Maybe a salad or a dessert would be great.","The dinner was delicious.","I don't cook very often.","Yes, I'll bring you home."]},
+{prompt:"I heard the professor is giving a pop quiz tomorrow.",o:["Really? I'd better review my notes tonight.","The professor is from Canada.","I heard that song too.","Tomorrow is Thursday."]},
+{prompt:"Excuse me, is this seat taken?",o:["No, go ahead.","Yes, I took the class.","The seats are comfortable.","I'll take it to go."]},
+{prompt:"How about grabbing lunch after class?",o:["Sounds good. The café or the dining hall?","I had lunch yesterday.","Class ends at noon on Fridays.","I grabbed my bag."]},
+{prompt:"My laptop keeps freezing during online exams.",o:["You should contact the IT help desk.","I prefer paper exams too.","It's freezing outside today.","Online exams are on Tuesday."]},
+{prompt:"Weren't you supposed to work at the library today?",o:["I switched shifts with a coworker.","The library has three floors.","I'm supposed to read this.","Yes, it's a good place to study."]},
+{prompt:"Can you remind me what chapter we need to read?",o:["Chapter seven, I think.","I read it twice.","Remind me tomorrow.","It's a very interesting book."]},
+{prompt:"The heating in my dorm room isn't working.",o:["You should report it to the housing office.","My room is on the second floor.","It's working fine, thanks.","I don't like hot weather."]}
+],
+conv:[
+{title:"Two students about a group project",lines:[
+{v:0,t:"Hey Sam, have you started your part of the marketing project?"},
+{v:1,t:"Sort of. I collected the survey data, but I'm not sure how to present it. There are almost two hundred responses."},
+{v:0,t:"Two hundred? That's great. Why don't you put the main results in a few charts instead of a table? Professor Lee said she prefers visuals."},
+{v:1,t:"Good idea. But I don't really know how to make charts in the spreadsheet program."},
+{v:0,t:"The computer lab offers a free workshop on Thursday afternoons. I went last semester, and it was really helpful."},
+{v:1,t:"Thursday? I have chemistry lab until four."},
+{v:0,t:"I think there's a recorded version on the lab's website too. You could watch it tonight."},
+{v:1,t:"Perfect. I'll watch it and send you a draft of the charts by Saturday."}],
+questions:[
+{q:"What is Sam's problem?",o:["He does not know how to present the data.","He has not collected any data.","He lost the survey responses.","He disagrees with Professor Lee."],why:"No sabe cómo presentar los datos."},
+{q:"Why does the woman mention Professor Lee?",o:["The professor prefers visual presentations.","The professor teaches the workshop.","The professor extended the deadline.","The professor wants a table."],why:"«she prefers visuals»."},
+{q:"What will Sam probably do tonight?",o:["Watch a recorded workshop","Attend a chemistry lab","Go to the computer lab","Call Professor Lee"],why:"Verá la versión grabada en el sitio web."}]},
+{title:"Student and housing office",lines:[
+{v:0,t:"Hi, I'd like to ask about changing rooms. I'm in Maple Hall right now."},
+{v:1,t:"Sure. Can I ask why you'd like to move?"},
+{v:0,t:"My room is right above the dining hall loading area. Trucks arrive at five every morning, and the noise wakes me up."},
+{v:1,t:"I understand. Unfortunately, room changes are only processed during the first two weeks of each semester, and we're past that now."},
+{v:0,t:"Oh no. So there's nothing I can do?"},
+{v:1,t:"Well, you could ask your RA whether anyone on your floor wants to swap rooms. If two students agree, we can approve the swap at any time."},
+{v:0,t:"Okay, I'll talk to my RA tonight. Thanks."}],
+questions:[
+{q:"Why does the student want to change rooms?",o:["Early morning noise wakes her up.","Her room is too small.","She dislikes her roommate.","The dining hall is too far away."],why:"Los camiones llegan a las 5 y la despiertan."},
+{q:"Why can't the office process a normal room change?",o:["The deadline has passed.","No rooms are available on campus.","She needs a doctor's note.","Maple Hall is closing."],why:"Solo se procesan en las dos primeras semanas."},
+{q:"What does the employee suggest?",o:["Finding another student to swap rooms","Moving off campus","Buying earplugs","Waiting until next year"],why:"Un intercambio entre dos estudiantes se aprueba en cualquier momento."}]},
+{title:"Student and professor about a paper",lines:[
+{v:0,t:"Professor Ortiz, thanks for meeting with me. I wanted to talk about my research paper topic."},
+{v:1,t:"Of course. You proposed writing about renewable energy, right?"},
+{v:0,t:"Yes, but when I started looking for sources, I found thousands of articles. I'm overwhelmed."},
+{v:1,t:"That usually means the topic is too broad. Renewable energy covers solar, wind, hydroelectric power, and much more. Is there one aspect that interests you most?"},
+{v:0,t:"I guess solar panels on farms. My family grows vegetables, and some farmers near us are installing them."},
+{v:1,t:"That's a great focus. You could look at whether solar panels affect crop yields. It's specific, and it connects to your own experience."},
+{v:0,t:"I like that. I'll revise my proposal and send it to you by Friday."}],
+questions:[
+{q:"Why did the student go to see the professor?",o:["To get help with her paper topic","To ask for a deadline extension","To discuss a grade","To borrow a book"],why:"Quiere hablar de su tema de investigación."},
+{q:"What does the professor imply about the student's original topic?",o:["It is too general.","It is too difficult.","It has been studied too little.","It is unrelated to the course."],why:"Muchos artículos = tema demasiado amplio."},
+{q:"Why does the student mention her family?",o:["To explain her interest in solar panels on farms","To say she cannot finish the paper","To ask for help with farming","To compare energy prices"],why:"Su familia cultiva y vecinos instalan paneles."}]}
+],
+announce:[
+{title:"Library hours during finals",lines:[{v:2,t:"Attention, library users. During final exam week, the main library will be open twenty-four hours a day, starting next Monday. Please note that after midnight, only the first and second floors will be available, and you will need to show your student ID at the entrance. Free coffee will be served in the lobby from ten p.m. to two a.m. Group study rooms can be reserved for a maximum of three hours. Good luck on your exams."}],
+questions:[
+{q:"What changes during final exam week?",o:["The library stays open all day and night.","The library closes earlier.","Coffee is no longer allowed.","Study rooms cannot be reserved."],why:"Abierta 24 horas."},
+{q:"What must students do after midnight?",o:["Show a student ID","Reserve a study room","Stay on the third floor","Leave by two a.m."],why:"Deben mostrar el carné al entrar."}]},
+{title:"Field trip instructions",lines:[{v:2,t:"Good morning, geology students. Tomorrow's field trip to Eagle Canyon will leave from the front of the science building at seven thirty sharp. The bus will not wait for latecomers. The weather forecast predicts rain in the afternoon, so bring a waterproof jacket and boots with good grip. Lunch will not be provided, so pack your own food and plenty of water. We'll return to campus around five."}],
+questions:[
+{q:"Why should students bring a waterproof jacket?",o:["Rain is expected later in the day.","The canyon has a waterfall.","It will be very cold in the morning.","The bus has no heating."],why:"Se pronostica lluvia en la tarde."},
+{q:"What does the speaker imply about arriving late?",o:["Late students will miss the trip.","Late students can take a later bus.","The trip will start at eight.","Lunch will be served late."],why:"«The bus will not wait for latecomers»."}]},
+{title:"Gym closure",lines:[{v:2,t:"This is an announcement from campus recreation. The north gym will be closed this Saturday and Sunday for floor repairs. All basketball and volleyball games scheduled for this weekend have been moved to the south gym. The swimming pool and the weight room will remain open as usual. We expect the north gym to reopen on Monday morning. We apologize for any inconvenience."}],
+questions:[
+{q:"Why is the north gym closing?",o:["The floor is being repaired.","There is a tournament.","It is being painted.","There is a water leak."],why:"«for floor repairs»."},
+{q:"Where will the basketball games take place?",o:["In the south gym","In the north gym","In the weight room","They are cancelled"],why:"Se trasladan al gimnasio sur."}]}
+],
+talk:[
+{title:"Economics: Opportunity cost",lines:[
+{v:3,t:"Let's begin today with a concept that sounds simple but shapes almost every economic decision: opportunity cost."},
+{v:3,t:"Opportunity cost is the value of the next best alternative you give up when you make a choice. Say you have a free Saturday. You could work a shift and earn eighty dollars, or you could go hiking with friends. If you choose hiking, the opportunity cost isn't zero just because hiking is free. It's the eighty dollars you didn't earn."},
+{v:3,t:"Businesses think this way too. A farmer who plants corn on a field cannot plant soybeans on the same field that season. So the real cost of the corn includes the profit the soybeans might have produced."},
+{v:3,t:"Why does this matter? Because people often ignore costs that don't involve money leaving their pocket. Thinking in terms of opportunity cost helps you see the full price of your decisions, including time."}],
+questions:[
+{q:"What is opportunity cost?",o:["The value of the best option you give up","The money you spend on a purchase","The profit a business earns","The time a decision takes"],why:"Valor de la mejor alternativa sacrificada."},
+{q:"Why does the professor mention hiking with friends?",o:["To show that a free activity can still have a cost","To recommend outdoor activities","To explain how to earn eighty dollars","To compare hiking and farming"],why:"Aunque es gratis, se pierden los 80 dólares."},
+{q:"What does the farmer example illustrate?",o:["Choosing one crop means giving up profits from another","Corn is more profitable than soybeans","Farmers do not think about costs","Fields should be planted twice a season"],why:"Sembrar maíz implica renunciar a la soya."},
+{q:"According to the professor, why do people often ignore opportunity costs?",o:["They do not involve money leaving their pocket.","They are too difficult to calculate.","They only apply to businesses.","They are always very small."],why:"Lo dice explícitamente al final."}]},
+{title:"Art history: Impressionism",lines:[
+{v:1,t:"Today we're looking at Impressionism, a movement that began in France in the 1860s and 70s."},
+{v:1,t:"At that time, the official art world was controlled by the Academy, which held a yearly exhibition called the Salon. The Academy favored historical and religious subjects, painted with smooth, invisible brushstrokes in a studio."},
+{v:1,t:"The Impressionists broke these rules. They often painted outdoors, which was easier thanks to a new invention: paint sold in portable metal tubes. They wanted to capture the changing effects of light, so they worked quickly, with visible brushstrokes and bright colors. Their subjects were ordinary: train stations, cafés, people relaxing by the river."},
+{v:1,t:"Many critics hated these works at first. In fact, the name Impressionism came from a critic who used it as an insult. After being rejected by the Salon, the artists organized their own independent exhibitions, and eventually, of course, their style became enormously popular."}],
+questions:[
+{q:"What kind of art did the Academy prefer?",o:["Historical and religious scenes with smooth brushwork","Outdoor scenes of everyday life","Bright colors and visible brushstrokes","Paintings of train stations"],why:"Temas históricos y religiosos, pincelada lisa."},
+{q:"Why does the professor mention paint in metal tubes?",o:["It made painting outdoors more practical.","It made paintings more expensive.","It was required by the Salon.","It allowed artists to paint more slowly."],why:"Facilitó pintar al aire libre."},
+{q:"How did the name Impressionism originate?",o:["A critic used it as an insult.","The artists chose it at their first meeting.","It came from the Academy's rules.","It was the title of a museum."],why:"Un crítico lo usó como insulto."},
+{q:"What did the artists do after being rejected by the Salon?",o:["They held their own exhibitions.","They stopped painting outdoors.","They joined the Academy.","They moved out of France."],why:"Organizaron exposiciones independientes."}]},
+{title:"Biology: Animal camouflage",lines:[
+{v:3,t:"Last time we talked about predators. Today, let's look at the other side: how prey animals avoid being seen. One of the most common strategies is camouflage."},
+{v:3,t:"The simplest form is background matching. A snowshoe hare, for example, has brown fur in summer and grows white fur in winter, so it blends in with the snow."},
+{v:3,t:"A second strategy is called disruptive coloration. Here, bold patterns like stripes or patches break up the outline of the animal's body. Predators recognize prey partly by shape, so if the outline is hard to see, the animal is harder to detect."},
+{v:3,t:"Now, here's an interesting problem. Climate change is reducing snow cover in many areas, but hares still change color based on day length, not on the presence of snow. So in some places we now see white hares sitting on brown ground, which makes them very easy targets."}],
+questions:[
+{q:"What is the lecture mainly about?",o:["Ways prey animals avoid being detected","How predators hunt in winter","The life cycle of the snowshoe hare","How climate change affects predators"],why:"Estrategias de camuflaje de las presas."},
+{q:"How does disruptive coloration protect an animal?",o:["It makes the outline of the body hard to see.","It matches the color of the background exactly.","It warns predators that the animal is toxic.","It keeps the animal warm."],why:"Rompe el contorno del cuerpo."},
+{q:"What determines when snowshoe hares change color?",o:["Day length","The amount of snow","The temperature","The presence of predators"],why:"Cambian según la duración del día."},
+{q:"What problem does the professor describe at the end?",o:["Some hares are white when there is no snow.","Hares are losing their fur.","Predators are changing color too.","Hares are moving to warmer regions."],why:"Liebres blancas sobre suelo marrón."}]}
+],
+build:[
+{ctx:"Why are you leaving so early?",answer:"I want to get a good seat at the concert."},
+{ctx:"Did you like the book I lent you?",answer:"I have not had time to finish it yet."},
+{ctx:"Who is giving the keynote speech?",answer:"A scientist who studies climate change will speak."},
+{ctx:"I missed the beginning of the lecture.",answer:"Do you want to borrow my notes from today?"},
+{ctx:"The printer in the lab is broken again.",answer:"You can use the one on the second floor."},
+{ctx:"When is the research paper due?",answer:"The professor told us it is due next Friday."},
+{ctx:"What do you usually do on weekends?",answer:"I usually go hiking with my roommates."},
+{ctx:"Is it hard to get an appointment with the advisor?",answer:"You should book at least a week in advance."},
+{ctx:"I'm not sure which elective to take.",answer:"Have you asked what the other students recommend?"},
+{ctx:"How did the team do in the competition?",answer:"They won second place out of twenty teams."},
+{ctx:"Why didn't Maria come to the meeting?",answer:"She was feeling sick and decided to stay home."},
+{ctx:"Can you tell me where the registrar's office is?",answer:"It is located next to the main cafeteria."}
+],
+email:[
+{situation:"You signed up for a weekend photography workshop at your university, but you now have a family event on the same date. Write an email to the workshop coordinator, Mr. Hayes.",bullets:["Explain why you cannot attend","Ask whether you can join a later session","Ask about the registration fee you paid"]},
+{situation:"You recently started working part-time at a campus café. Your manager scheduled you during one of your classes. Write an email to your manager.",bullets:["Describe the scheduling problem","Explain your class schedule","Suggest a possible solution"]},
+{situation:"A classmate missed several lectures because of an illness and asked you for help. Write an email to your classmate.",bullets:["Summarize what was covered in class","Offer to share your notes or study together","Mention an important upcoming deadline"]},
+{situation:"You read an article in the student newspaper saying the campus will close the late-night bus service. Write an email to the editor of the newspaper.",bullets:["Explain how the decision affects students","Give a specific example from your own experience","Suggest an alternative to closing the service"]}
+],
+discussion:[
+{profName:"Dr. Nguyen",course:"Sociology",prof:"Social media allows people to stay in contact with friends and family around the world. However, some researchers argue that it makes people feel lonelier and less connected in real life. Overall, has social media made our relationships stronger or weaker? Explain your view.",students:[{name:"Hannah",text:"I think social media makes relationships stronger. My grandparents live in another country, and thanks to video calls and photos, I feel close to them even though we rarely meet."},{name:"Leo",text:"In my opinion, it weakens relationships. People spend time scrolling instead of talking to the people around them. Online likes are not the same as real friendship."}]},
+{profName:"Dr. Kowalski",course:"Business",prof:"Some companies now offer a four-day work week, with employees working the same number of hours over fewer days or working fewer hours in total. Do you think a four-day work week is a good idea for most companies? Why or why not?",students:[{name:"Priya",text:"A four-day week is a great idea. Rested employees are more productive and creative, and companies can attract talented workers this way."},{name:"Carlos",text:"It might work in offices, but not in every industry. Hospitals, stores, and factories need people every day, so the schedule could create staffing problems."}]},
+{profName:"Dr. Adeyemi",course:"Environmental Science",prof:"Many cities offer financial incentives to encourage residents to buy electric cars. Others argue that the money would be better spent on public transportation. Which approach do you think is more effective for reducing pollution in cities? Explain.",students:[{name:"Mei",text:"Investing in public transportation is better. One bus can replace dozens of cars, and it also reduces traffic, not just emissions."},{name:"Jordan",text:"Electric cars are the more practical option. Many people live in areas where buses are rare, and they will keep driving no matter what. It's better if those cars are clean."}]}
+],
+repeat:[
+{context:"Library orientation",sentences:["The library opens at seven.","Please keep your voice down.","You can print documents on the second floor.","Laptops may be borrowed for up to four hours.","Rare books must be read in the special collections room.","If you need help finding a source, ask a librarian at the reference desk.","Books that are returned late will result in a small fine for each day they are overdue."]},
+{context:"Airport announcements",sentences:["Boarding will begin shortly.","Please have your passport ready.","Passengers with small children may board first.","Flight two twenty to Chicago has been delayed.","All liquids must be placed in a clear plastic bag.","Please make sure your carry-on bag fits in the overhead compartment.","Passengers who need special assistance should speak with an agent at the gate as soon as possible."]},
+{context:"Professor's first class",sentences:["Good morning, everyone.","Please turn off your phones.","The syllabus is posted on the course website.","There will be two exams and a final project.","Attendance counts for ten percent of your grade.","Office hours are on Tuesdays and Thursdays after class.","If you have to miss a class for any reason, please let me know by email in advance."]}
+],
+interview:[
+{topic:"Technology and daily life",qs:["How do you usually use your phone during a typical day?","What is one app or technology that has made your life easier?","Do you think children today spend too much time using technology? Why or why not?","Some people believe artificial intelligence will create more jobs than it eliminates. What is your opinion?"]},
+{topic:"Travel and culture",qs:["Tell me about a place you have visited that you enjoyed.","What do you usually do to prepare for a trip?","Is it better to travel alone or with other people? Explain.","Should students be encouraged to study abroad for a semester? Why or why not?"]},
+{topic:"Health and free time",qs:["What do you like to do in your free time?","How do you try to stay healthy during busy periods?","Do you think schools should require students to do physical activity every day? Why?","Some people say that free time is becoming less common in modern life. Do you agree?"]}
+]};
+const VOCAB_EXTRA=[["acquire","v.","to get or obtain","adquirir"],["adjacent","adj.","next to","adyacente, contiguo"],["albeit","conj.","although","aunque"],["analogous","adj.","similar in some way","análogo"],["apparent","adj.","seeming; easy to see","aparente, evidente"],["approximate","adj.","close but not exact","aproximado"],["capacity","n.","ability or maximum amount","capacidad"],["cease","v.","to stop","cesar"],["coincide","v.","to happen at the same time","coincidir"],["commodity","n.","a product that is bought and sold","materia prima, mercancía"],["compensate","v.","to make up for","compensar"],["comprehensive","adj.","including everything","exhaustivo, integral"],["conceive","v.","to form an idea","concebir"],["concurrent","adj.","happening at the same time","simultáneo"],["contemporary","adj.","belonging to the present time","contemporáneo"],["controversy","n.","public disagreement","controversia"],["conversely","adv.","in the opposite way","a la inversa"],["deteriorate","v.","to become worse","deteriorarse"],["deviate","v.","to move away from a norm","desviarse"],["dominant","adj.","most powerful or common","dominante"],["eliminate","v.","to remove completely","eliminar"],["emerge","v.","to appear; come out","surgir"],["empirical","adj.","based on observation","empírico"],["encounter","v.","to meet unexpectedly","encontrarse con"],["enormous","adj.","very large","enorme"],["equivalent","adj.","equal in value","equivalente"],["explicit","adj.","clearly stated","explícito"],["exploit","v.","to use fully; take advantage of","explotar, aprovechar"],["feasible","adj.","possible to do","factible"],["fundamental","adj.","basic and important","fundamental"],["hence","adv.","for this reason","por lo tanto"],["impose","v.","to force on someone","imponer"],["incentive","n.","something that encourages action","incentivo"],["inherent","adj.","existing as a natural part","inherente"],["intrinsic","adj.","belonging naturally","intrínseco"],["likewise","adv.","in the same way","asimismo"],["modify","v.","to change slightly","modificar"],["nevertheless","adv.","in spite of that","sin embargo"],["obtain","v.","to get","obtener"],["paradigm","n.","a model or pattern","paradigma"],["phenomenon","n.","an observable event","fenómeno"],["precede","v.","to come before","preceder"],["presume","v.","to suppose","suponer"],["prohibit","v.","to forbid","prohibir"],["rigid","adj.","stiff; not flexible","rígido"],["simulate","v.","to imitate","simular"],["substantial","adj.","large in amount","sustancial, considerable"],["supplement","v.","to add to","complementar"],["thereby","adv.","as a result of that","de ese modo"],["trigger","v.","to cause to start","desencadenar"]];
+
+if(typeof EXTRA!=="undefined")for(const k in EXTRA)BANK[k]=BANK[k].concat(EXTRA[k]);
+if(typeof VOCAB_EXTRA!=="undefined")VOCAB.push(...VOCAB_EXTRA);
+
+/* ===================== TASKS ===================== */
+const SECS={
+reading:{name:"Reading",time:"~30 min",items:"hasta 50 ítems",desc:"Adaptativo en dos etapas: tu desempeño en la primera parte decide la dificultad de la segunda.",tasks:["ctest","daily","academic"]},
+listening:{name:"Listening",time:"~29 min",items:"hasta 47 ítems",desc:"Adaptativo. Escuchas una sola vez; mezcla situaciones cotidianas y académicas.",tasks:["respond","conv","announce","talk"]},
+writing:{name:"Writing",time:"~23 min",items:"12 ítems",desc:"Tres tareas cortas: construir oraciones, escribir un correo y participar en una discusión académica.",tasks:["build","email","discussion"]},
+speaking:{name:"Speaking",time:"~8 min",items:"11 ítems",desc:"Dos tareas: repetir oraciones exactamente y responder una entrevista simulada.",tasks:["repeat","interview"]}};
+const TASKS={
+ctest:{sec:"reading",name:"Complete the Words",es:"Completa las letras que faltan en un párrafo.",tips:["Lee primero la oración completa del inicio: da el tema.","Fíjate en la gramática: ¿falta un plural (-s), un pasado (-ed), un adverbio (-ly)?","El número de casillas te dice cuántas letras faltan.","No te quedes atascado: completa lo seguro y vuelve."]},
+daily:{sec:"reading",name:"Read in Daily Life",es:"Textos cortos cotidianos: correos, avisos, mensajes, anuncios.",tips:["Lee primero las preguntas y luego busca la información.","Atento a cambios: «instead of», «no longer», «starting…».","Las preguntas de inferencia piden lo que el texto implica, no lo que dice literalmente."]},
+academic:{sec:"reading",name:"Read an Academic Passage",es:"Un texto académico de unas 250 palabras con preguntas variadas.",tips:["Lee la primera oración de cada párrafo para ver la estructura.","Vocabulario: reemplaza la palabra por cada opción y relee la frase.","NOT/EXCEPT: descarta las tres opciones que sí aparecen.","Propósito: pregúntate «¿por qué el autor incluye esto aquí?»."]},
+respond:{sec:"listening",name:"Listen and Choose a Response",es:"Escuchas una frase y eliges la respuesta más natural.",tips:["Identifica el tipo de frase: pregunta, petición, información, queja.","Desconfía de opciones que repiten palabras del audio: suelen ser trampas.","Las respuestas indirectas («Only in summer…») muchas veces son las correctas."]},
+conv:{sec:"listening",name:"Listen to a Conversation",es:"Conversaciones de campus o de la vida diaria.",tips:["Anota el problema principal y la solución.","Fíjate en lo que la persona decide hacer al final.","Escucha el tono: sorpresa, duda, acuerdo."]},
+announce:{sec:"listening",name:"Listen to an Announcement",es:"Avisos breves: cambios, recordatorios, instrucciones.",tips:["Pregúntate: ¿qué cambia?, ¿por qué?, ¿qué deben hacer los oyentes?","Las instrucciones y consecuencias («will not be allowed…») suelen preguntarse."]},
+talk:{sec:"listening",name:"Listen to an Academic Talk",es:"Miniclases de distintas disciplinas.",tips:["Toma notas en dos columnas: idea principal / ejemplos.","Las definiciones y los estudios mencionados casi siempre se preguntan.","Atento a señales: «One hypothesis is…», «So, the next time…»."]},
+build:{sec:"writing",name:"Build a Sentence",es:"Ordena las palabras para responder correctamente a un mensaje.",tips:["Busca primero sujeto + verbo.","Preguntas indirectas: «Do you know what time it opens?» (sin invertir el verbo).","Revisa que la respuesta tenga sentido con el mensaje anterior."]},
+email:{sec:"writing",name:"Write an Email",es:"Escribe un correo de ~100–150 palabras que cubra tres puntos (7 min).",tips:["Estructura: saludo, propósito, un párrafo por punto, cierre.","Cubre los TRES puntos; omitir uno baja mucho la nota.","Adapta el registro: profesor (formal) vs. compañero (neutro).","Reserva 1 minuto para revisar errores."]},
+discussion:{sec:"writing",name:"Academic Discussion",es:"Responde a un foro académico con tu opinión (100+ palabras, 10 min).",tips:["Da tu postura en la primera oración.","Menciona a un compañero y añade una idea NUEVA, no repitas.","Una razón + un ejemplo concreto vale más que tres ideas vagas.","Apunta a 110–140 palabras bien escritas."]},
+repeat:{sec:"speaking",name:"Listen and Repeat",es:"Escucha cada oración y repítela exactamente.",tips:["Concéntrate en el significado: es más fácil recordar ideas que palabras sueltas.","Imita el ritmo y la entonación.","Si olvidas una palabra, sigue: se puntúa la exactitud global."]},
+vocabq:{sec:"vocab",name:"Vocabulario",es:"10 preguntas de vocabulario académico (repetición espaciada).",tips:[]},
+interview:{sec:"speaking",name:"Take an Interview",es:"Responde 4 preguntas de entrevista, 45 segundos cada una.",tips:["Responde directo y luego da una razón y un ejemplo.","Usa conectores: «For example», «That's why», «On the other hand».","Habla durante casi todo el tiempo, sin prisa."]}};
+
+/* ===================== HELPERS ===================== */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const fmt=s=>`${Math.floor(s/60)}:${String(Math.max(0,s)%60).padStart(2,"0")}`;
+const para=t=>esc(t).split(/\n\n+/).map(p=>`<p>${p.replace(/\*\*(.+?)\*\*/g,"<mark>$1</mark>").replace(/\n/g,"<br>")}</p>`).join("");
+const ICON={play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg>',mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',spark:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 6.3L20 10l-5.8 1.7L12 18l-2.2-6.3L4 10l5.8-1.7zM19 15l1 2.5 2.5 1-2.5 1L19 22l-1-2.5-2.5-1 2.5-1z"/></svg>',spk:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg>'};
+const band=p=>p==null?null:p>=.95?6:p>=.86?5.5:p>=.77?5:p>=.68?4.5:p>=.58?4:p>=.48?3.5:p>=.38?3:p>=.28?2.5:p>=.18?2:p>=.08?1.5:1;
+const CEFR={6:"C2",5.5:"C1+",5:"C1",4.5:"B2+",4:"B2",3.5:"B1+",3:"B1",2.5:"A2+",2:"A2",1.5:"A1+",1:"A1"};
+const roundHalf=x=>Math.round(x*2)/2;
+
+/* ===================== STATE ===================== */
+const KEY="toefl-trainer-v1";
+const DEF=()=>({attempts:[],vocab:{},custom:{},seen:{},settings:{target:4.5,examDate:"",goalMin:30,daysWeek:5,remind:"",apiKey:"",model:"claude-sonnet-5-5"},daily:{},updated:0});
+let S=DEF();
+const fixS=()=>{const d=DEF();S.settings=Object.assign(d.settings,S.settings||{});S.daily=S.daily||{};S.custom=S.custom||{};S.seen=S.seen||{};S.vocab=S.vocab||{}};
+try{const l=JSON.parse(localStorage.getItem(KEY)||"null");if(l)S=Object.assign(DEF(),l)}catch(e){}fixS();
+let REF=null,saveT=null,saving=false,dirty=false,syncState="local";
+function save(){S.updated=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}clearTimeout(saveT);saveT=setTimeout(flush,1500)}
+async function flush(){if(!REF)return;if(saving){dirty=true;return}saving=true;try{const c=JSON.parse(JSON.stringify(S));c.settings.apiKey="";await REF.set(c);syncState="cloud"}catch(e){}saving=false;if(dirty){dirty=false;flush()}}
+function record(task,score,extra){S.attempts.push({t:task,s:Math.round(score*1000)/1000,d:Date.now(),...(extra||{})});if(S.attempts.length>2000)S.attempts=S.attempts.slice(-2000);save()}
+const pool=t=>BANK[t].concat(S.custom[t]||[]);
+function nextItem(t){const p=pool(t);const i=(S.seen[t]||0)%p.length;S.seen[t]=(S.seen[t]||0)+1;save();return p[i]}
+function secScore(sec){const a=S.attempts.filter(x=>TASKS[x.t]&&TASKS[x.t].sec===sec).slice(-25);if(!a.length)return null;return a.reduce((s,x)=>s+x.s,0)/a.length}
+function taskStats(t){const a=S.attempts.filter(x=>x.t===t);return{n:a.length,avg:a.length?a.slice(-10).reduce((s,x)=>s+x.s,0)/Math.min(10,a.length):null}}
+
+/* ===================== CAPABILITIES ===================== */
+const use=n=>(window.claude&&window.claude.use)?window.claude.use(n).catch(()=>null):Promise.resolve(null);
+let TTS=null,DICT=null,SAMPLE=null,dictTarget=null;
+use("tts").then(t=>{if(t){TTS=t;try{t.onState(e=>{document.body.classList.toggle("speaking",e.state==="speaking")})}catch(e){}}});
+use("dictation").then(d=>{if(!d)return;DICT=d;d.onPartial(e=>dictTarget&&dictTarget.partial&&dictTarget.partial(e.text));d.onFinal(e=>dictTarget&&dictTarget.final&&dictTarget.final(e.text));d.onState(e=>dictTarget&&dictTarget.state&&dictTarget.state(e.state,e.reason));rerender()});
+use("sample").then(s=>{if(s){SAMPLE=s;rerender()}});
+function rerender(){if(!["practice","mockres",""].includes(curView))render()}
+Promise.all([use("db"),use("user")]).then(async([db,user])=>{
+ if(!db||!user)return;let id=null;try{id=await user.id()}catch(e){}if(!id)return;
+ try{REF=db.doc("data/users/"+id+"/toefl");const snap=await REF.get();
+  if(snap.exists){const d=snap.data();if(d&&(d.updated||0)>(S.updated||0)){S=Object.assign(DEF(),JSON.parse(JSON.stringify(d)));fixS();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}rerender()}else if((S.updated||0)>(d.updated||0))flush()}
+  else if(S.attempts.length)flush();
+  syncState="cloud";if(curView==="inicio")render()}catch(e){REF=null}
+});
+const CAP=window.Capacitor,IS_APP=!!(CAP&&CAP.isNativePlatform&&CAP.isNativePlatform());
+const regP=n=>{if(!IS_APP)return null;try{if(window.capacitorExports&&capacitorExports.registerPlugin)return capacitorExports.registerPlugin(n);return(CAP.Plugins&&CAP.Plugins[n])||null}catch(e){return null}};
+const TTSP=regP("TextToSpeech"),SRP=regP("SpeechRecognition"),LN=regP("LocalNotifications");
+const hasSynth="speechSynthesis" in window&&!IS_APP;
+const canAudio=()=>!!TTS||!!TTSP||hasSynth;
+const VOICES=["buttery","airy","rounded","glassy"];
+let speakStop=null;
+function speak(lines,rate=1){
+ if(TTS)return TTS.speak(lines.map(l=>({text:l.t,voice:VOICES[l.v||0],language:"en",rate})));
+ if(TTSP){let stopped=false;speakStop=()=>{stopped=true};document.body.classList.add("speaking");
+  return(async()=>{try{for(const l of lines){if(stopped)break;await TTSP.speak({text:l.t,lang:"en-US",rate:rate,pitch:[1,1.25,.95,.82][l.v||0]||1,volume:1,category:"playback"})}}finally{document.body.classList.remove("speaking")}})()}
+ if(hasSynth)return new Promise(res=>{speechSynthesis.cancel();const vs=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang));document.body.classList.add("speaking");
+  lines.forEach((l,i)=>{const u=new SpeechSynthesisUtterance(l.t);u.lang="en-US";u.rate=rate;if(vs.length)u.voice=vs[(l.v||0)%vs.length];if(i===lines.length-1){u.onend=u.onerror=()=>{document.body.classList.remove("speaking");res()}}speechSynthesis.speak(u)})});
+ return Promise.reject({code:"no_audio"});
+}
+function stopSpeak(){try{TTS&&TTS.stop()}catch(e){}if(speakStop){speakStop();speakStop=null}try{TTSP&&TTSP.stop().catch(()=>{})}catch(e){}try{hasSynth&&speechSynthesis.cancel()}catch(e){}document.body.classList.remove("speaking")}
+/* voice input: Claude dictation, or Android speech recognition in the app */
+const SR_OPTS={language:"en-US",maxResults:1,partialResults:true,popup:false};
+let srActive=false,srLast="",srH=null,srListen=false;
+const voiceOn=()=>!!DICT||!!SRP;
+function voiceStart(h){
+ if(DICT){dictTarget=h;return DICT.start()}
+ if(!SRP)return Promise.reject({code:"no_voice"});
+ srH=h;srActive=true;srLast="";
+ return(async()=>{let p={};try{p=await SRP.checkPermissions()}catch(e){}
+  if(p.speechRecognition!=="granted"){const r=await SRP.requestPermissions();if(r.speechRecognition!=="granted"){srActive=false;throw{code:"not_granted"}}}
+  if(!srListen){srListen=true;
+   await SRP.addListener("partialResults",d=>{srLast=(d.matches||[])[0]||"";srH&&srH.partial&&srH.partial(srLast)});
+   await SRP.addListener("listeningState",st=>{if(st.status==="stopped"){if(srLast){const t=srLast;srLast="";srH&&srH.final&&srH.final(t)}if(srActive)setTimeout(()=>{if(srActive)SRP.start(SR_OPTS).catch(()=>{})},250)}})}
+  await SRP.start(SR_OPTS)})().catch(e=>{srActive=false;throw e})}
+async function voiceStop(){if(DICT){try{await DICT.stop()}catch(e){}return}if(!SRP)return;srActive=false;try{await SRP.stop()}catch(e){}await new Promise(r=>setTimeout(r,300));if(srLast){const t=srLast;srLast="";srH&&srH.final&&srH.final(t)}}
+/* AI: Claude in the artifact, or the user's own API key in the Android app */
+const aiOn=()=>!!SAMPLE||(IS_APP&&!!S.settings.apiKey);
+async function askJSON(prompt,tier="default"){
+ if(SAMPLE)return SAMPLE.json(prompt,{modelTier:tier});
+ if(IS_APP&&S.settings.apiKey){
+  const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":S.settings.apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+   body:JSON.stringify({model:S.settings.model||"claude-sonnet-5-5",max_tokens:4000,messages:[{role:"user",content:prompt+"\nRespond with the JSON object only."}]})});
+  if(!r.ok)throw{code:r.status===429?"rate_limited":r.status===401?"bad_key":"api_error"};
+  const j=await r.json();const txt=(j.content||[]).map(c=>c.text||"").join("");const a=txt.indexOf("{"),b=txt.lastIndexOf("}");if(a<0)throw{code:"api_error"};return JSON.parse(txt.slice(a,b+1))}
+ throw{code:"no_ai"}}
+
+/* ===================== WIDGETS ===================== */
+function player(el,lines,{once=false,label="Reproducir audio",onEnd}={}){
+ let plays=0;
+ el.innerHTML=`<div class="player"><button class="btn primary" data-p>${ICON.play}${label}</button><div class="wave">${"<i></i>".repeat(7)}</div>
+ ${once?'<span class="small mute">Modo examen: se reproduce una sola vez.</span>':`<label class="small">Velocidad <select data-r><option value=".8">0.8×</option><option value="1" selected>1×</option><option value="1.2">1.2×</option></select></label>`}
+ <span class="small mute" data-s></span></div>`;
+ const b=$("[data-p]",el),st=$("[data-s]",el);
+ if(!canAudio()){st.textContent="Este navegador no puede reproducir audio aquí; se mostrará la transcripción.";b.disabled=true;setTimeout(()=>onEnd&&onEnd(true),0);return}
+ b.onclick=()=>{const r=+($("[data-r]",el)?.value||1);b.disabled=true;st.textContent="Reproduciendo…";
+  speak(lines,r).then(()=>{plays++;st.textContent=`Reproducido ${plays} ${plays>1?"veces":"vez"}`;if(!once)b.disabled=false;onEnd&&onEnd()}).catch(e=>{b.disabled=false;st.textContent=e&&e.code==="not_granted"?"Audio desactivado: se muestra la transcripción.":"No se pudo reproducir. Intenta de nuevo.";if(e&&e.code==="not_granted")onEnd&&onEnd(true)})};
+}
+function mcq(questions){
+ const ord=questions.map(q=>shuffle(q.o.map((_,i)=>i)));
+ const html=questions.map((q,i)=>`<div class="q" data-i="${i}"><p class="qt">${i+1}. ${esc(q.q)}</p><div class="opts">${ord[i].map((oi,k)=>`<button class="opt" data-o="${oi}"><span class="bub">${"ABCD"[k]}</span><span>${esc(q.o[oi])}</span></button>`).join("")}</div><p class="why" hidden></p></div>`).join("");
+ return{html,bind(root){$$(".q",root).forEach(qe=>$$(".opt",qe).forEach(b=>b.onclick=()=>{$$(".opt",qe).forEach(x=>x.classList.remove("sel"));b.classList.add("sel")}))},
+ answered(root){return $$(".q",root).every(q=>$(".opt.sel",q))},
+ check(root,reveal){let ok=0;$$(".q",root).forEach((qe,i)=>{const sel=$(".opt.sel",qe);const good=sel&&sel.dataset.o==="0";if(good)ok++;$$(".opt",qe).forEach(b=>b.disabled=true);
+  if(reveal){$(".opt[data-o='0']",qe).classList.add("ok");if(sel&&!good)sel.classList.add("bad");const w=$(".why",qe);if(questions[i].why){w.textContent=(good?"Correcto. ":"Incorrecto. ")+questions[i].why;w.hidden=false}}});return ok}};
+}
+function micBox(el,{seconds=0,placeholder="Tu respuesta aparecerá aquí…",onStop}={}){
+ let text="",partial="",timer=null,left=seconds,active=false;const V=voiceOn();
+ el.innerHTML=`<div class="actions" style="margin-top:0">${V?`<button class="btn mic" data-m>${ICON.mic}<span>Grabar</span></button>`:""}${seconds?`<span class="clock" data-c>${fmt(seconds)}</span>`:""}<span class="small mute" data-st>${V?"Pulsa Grabar y habla en inglés.":"Dictado por voz no disponible aquí: escribe tu respuesta."}</span></div><textarea style="min-height:110px;margin-top:10px" placeholder="${esc(placeholder)}"></textarea>`;
+ const ta=$("textarea",el),mb=$("[data-m]",el),clock=$("[data-c]",el),st=$("[data-st]",el);
+ const show=()=>{ta.value=(text+(partial?" "+partial:"")).trim()};
+ ta.oninput=()=>{text=ta.value;partial=""};
+ const tick=()=>{left--;if(clock){clock.textContent=fmt(left);clock.classList.toggle("low",left<=10)}if(left<=0)stop()};
+ function start(){ if(active)return; text=ta.value; active=true;
+  if(V){const h={partial:t=>{partial=t;show()},final:t=>{text=(text+" "+t).trim();partial="";show()},state:(s,r)=>{if(s==="idle"&&active&&r!=="stopped"){st.textContent="El dictado se detuvo ("+r+")."}}};
+   voiceStart(h).catch(e=>{st.textContent=e&&e.code==="not_granted"?"Permiso de micrófono denegado: escribe tu respuesta.":"No se pudo iniciar el dictado; escribe tu respuesta.";active=false;clearInterval(timer);mb.classList.remove("rec");$("span",mb).textContent="Grabar"});
+   mb.classList.add("rec");$("span",mb).textContent="Detener";st.textContent="Grabando… habla ahora.";}
+  else st.textContent="Escribe tu respuesta.";
+  if(seconds){timer=setInterval(tick,1000)} }
+ async function stop(){ if(!active)return; active=false; clearInterval(timer);
+  if(V){await voiceStop(); mb.classList.remove("rec");$("span",mb).textContent="Grabar de nuevo";st.textContent="Grabación terminada. Puedes corregir el texto si el dictado se equivocó.";}
+  partial="";show();text=ta.value;onStop&&onStop(text)}
+ if(mb)mb.onclick=()=>active?stop():start();
+ return{start,stop,get text(){return ta.value.trim()},el:ta,get active(){return active}};
+}
+function words(s){return s.toLowerCase().replace(/[’']/g,"'").replace(/[^a-z0-9' ]+/g," ").split(/\s+/).filter(Boolean)}
+function lcsDiff(target,said){const a=words(target),b=words(said);const m=a.length,n=b.length,L=Array.from({length:m+1},()=>new Array(n+1).fill(0));
+ for(let i=m-1;i>=0;i--)for(let j=n-1;j>=0;j--)L[i][j]=a[i]===b[j]?L[i+1][j+1]+1:Math.max(L[i+1][j],L[i][j+1]);
+ const hit=new Array(m).fill(false);let i=0,j=0;while(i<m&&j<n){if(a[i]===b[j]){hit[i]=true;i++;j++}else if(L[i+1][j]>=L[i][j+1])i++;else j++}
+ const extra=Math.max(0,n-L[0][0]);const score=m?Math.max(0,(L[0][0]-extra*.5)/m):0;
+ return{score:Math.min(1,score),html:a.map((w,k)=>`<span class="${hit[k]?"h":"m"}">${esc(w)}</span>`).join(" ")}}
+function renderFeedback(fb,title){
+ if(!fb)return"";const L=a=>(a||[]).map(x=>`<li>${esc(x)}</li>`).join("");
+ return`<div class="fb"><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><span class="score">${esc(fb.score)}<span class="mute" style="font-size:22px">/5</span></span><div><b>${esc(title||"Evaluación con IA")}</b><br><span class="mute">Banda estimada ${band((+fb.score||0)/5)} · ${esc(fb.level||"")}</span></div></div>
+ <p>${esc(fb.summary_es)}</p>${fb.strengths_es&&fb.strengths_es.length?`<h3>Fortalezas</h3><ul>${L(fb.strengths_es)}</ul>`:""}${fb.improvements_es&&fb.improvements_es.length?`<h3>Para mejorar</h3><ul>${L(fb.improvements_es)}</ul>`:""}
+ ${fb.errors&&fb.errors.length?`<h3>Errores y correcciones</h3><div class="scroll"><table><thead><tr><th>Escribiste</th><th>Corrección</th><th>Por qué</th></tr></thead><tbody>${fb.errors.map(e=>`<tr><td style="color:var(--red)">${esc(e.original)}</td><td style="color:var(--ok)">${esc(e.correction)}</td><td>${esc(e.explanation_es)}</td></tr>`).join("")}</tbody></table></div>`:""}
+ ${fb.improved_version?`<h3>Versión mejorada (modelo)</h3><div class="card pre" style="margin:0">${esc(fb.improved_version)}</div>`:""}</div>`}
+const RUBRIC={email:"TOEFL iBT 2026 'Write an Email' task (0–5 scale). A 5 fully addresses all three bullet points with elaborated, well-organized content, appropriate tone and register for the recipient, varied syntax, precise vocabulary and almost no errors. A 3 addresses the task but with some missing elaboration, noticeable errors or inconsistent register. A 1 barely addresses the task.",
+discussion:"TOEFL iBT 2026 'Write for an Academic Discussion' task (0–5 scale). A 5 is a relevant, very clearly expressed contribution that states an opinion, supports it with well-elaborated reasons/examples, engages with or builds on classmates' posts with a new idea, uses varied syntax and precise idiomatic vocabulary with almost no errors (about 100+ words). A 3 is mostly relevant but with less elaboration or noticeable errors. A 1 is minimally relevant.",
+interview:"TOEFL iBT 2026 'Take an Interview' speaking task (0–5 scale). Evaluate each answer on how directly and fully it responds, development (reasons, examples), coherence, grammar range/accuracy and vocabulary. The text is an automatic speech-to-text transcript: ignore punctuation and capitalization, and treat obvious transcription glitches leniently; you cannot judge pronunciation, so do not penalize it."};
+function evalPrompt(kind,taskText,response){return`You are an experienced, fair TOEFL iBT rater. Score this response using the rubric: ${RUBRIC[kind]}
+Write all feedback for a Spanish-speaking learner: explanations in Spanish, quoted English as in the response.
+
+TASK:
+${taskText}
+
+STUDENT RESPONSE:
+"""${response}"""
+
+Return only JSON: {"score": number 0-5 in steps of 0.5, "level": "CEFR level estimate e.g. B2", "summary_es": "2-3 sentence overall judgment in Spanish", "strengths_es": ["..."], "improvements_es": ["concrete, actionable tips"], "errors": [{"original": "exact fragment", "correction": "corrected fragment", "explanation_es": "brief reason"}] (max 8, only real errors), "improved_version": "a revised version in English that keeps the student's ideas but would score 5"}. If the response is empty or off-topic, score 0 or 1.`}
+
+/* ===================== RUNNERS ===================== */
+function ctestBuild(text){
+ const sents=text.match(/[^.!?]+[.!?]+/g)||[text];let out=esc(sents[0].trim())+" ";const blanks=[];let alt=0;
+ sents.slice(1).forEach(s=>{s.trim().split(/\s+/).forEach(tok=>{const m=tok.match(/^([A-Za-z]+)([^A-Za-z]*)$/);
+  if(m&&m[1].length>=2&&blanks.length<10){alt++;if(alt%2===0){const w=m[1],k=Math.floor(w.length/2),miss=w.slice(k);out+=`<span style="white-space:nowrap">${esc(w.slice(0,k))}<input data-b="${blanks.length}" maxlength="${miss.length}" style="width:${miss.length+1.3}ch" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="letras que faltan"><span class="fix"></span>${esc(m[2])}</span> `;blanks.push(miss);return}}
+  out+=esc(tok)+" "})});return{html:out,blanks}}
+const RUN={};
+RUN.ctest=(el,item,ctx)=>{const {html,blanks}=ctestBuild(item.text);
+ el.innerHTML=`<div class="card"><p class="inst">Completa las letras que faltan en cada palabra.</p><p class="small mute">Tema: ${esc(item.title)} · Tiempo sugerido: 3 minutos</p><div class="ctext">${html}</div><div class="actions"><button class="btn primary" data-go>Comprobar</button></div></div>`;
+ const ins=$$("input",el);ins.forEach((inp,i)=>inp.oninput=()=>{if(inp.value.length>=+inp.maxLength&&ins[i+1])ins[i+1].focus()});
+ const submit=()=>{let ok=0;ins.forEach((inp,i)=>{const g=inp.value.trim().toLowerCase()===blanks[i].toLowerCase();if(g)ok++;inp.disabled=true;if(!ctx.exam){inp.classList.add(g?"ok":"bad");if(!g)inp.nextElementSibling.textContent="→"+blanks[i]}});$("[data-go]",el).remove();ctx.finish(ok/blanks.length,`${ok}/${blanks.length} palabras`)};
+ $("[data-go]",el).onclick=submit;return{submit}};
+function readingRunner(el,item,ctx,label){const m=mcq(item.questions);
+ el.innerHTML=`<div class="two"><div class="card"><span class="tag">${esc(item.kind||label)}</span><h3 style="margin-top:10px">${esc(item.title)}</h3><div class="passage ${item.kind?"":""}">${para(item.text)}</div></div><div class="card"><p class="inst">Responde las preguntas.</p><div data-q>${m.html}</div><div class="actions"><button class="btn primary" data-go>Comprobar respuestas</button><span class="small mute" data-w></span></div></div></div>`;
+ m.bind(el);const submit=(force)=>{if(!force&&!m.answered(el)){$("[data-w]",el).textContent="Te faltan preguntas por responder. Pulsa de nuevo para enviar así.";$("[data-go]",el).onclick=()=>submit(true);return}
+  const ok=m.check(el,!ctx.exam);$("[data-go]",el).remove();ctx.finish(ok/item.questions.length,`${ok}/${item.questions.length} correctas`)};
+ $("[data-go]",el).onclick=()=>submit(false);return{submit:()=>submit(true)}}
+RUN.daily=(el,item,ctx)=>readingRunner(el,item,ctx,"Daily life");
+RUN.academic=(el,item,ctx)=>readingRunner(el,item,ctx,"Academic passage");
+function listenRunner(el,item,ctx,inst){const m=mcq(item.questions);
+ const names=["Persona A","Persona B","Anuncio","Profesor/a"];
+ el.innerHTML=`<div class="card"><p class="inst">${inst}</p><p class="small mute">${esc(item.title)}</p><div data-pl></div>
+ ${ctx.exam?"":`<p class="small"><button class="btn" data-skip style="min-height:36px;padding:4px 12px">Mostrar preguntas sin escuchar</button></p>`}
+ <div data-qs hidden><div style="margin-top:18px">${m.html}</div><div class="actions"><button class="btn primary" data-go>Comprobar</button><span class="small mute" data-w></span></div></div>
+ <details data-tr hidden><summary>Ver transcripción</summary>${item.lines.map(l=>`<p><b>${esc(item.lines.length>1&&new Set(item.lines.map(x=>x.v)).size>1?names[l.v]:names[l.v>1?l.v:3])}:</b> ${esc(l.t)}</p>`).join("")}</details></div>`;
+ m.bind(el);const showQ=(noAudio)=>{$("[data-qs]",el).hidden=false;const sk=$("[data-skip]",el);if(sk)sk.remove();if(noAudio)$("[data-tr]",el).hidden=false,$("[data-tr]",el).open=true};
+ player($("[data-pl]",el),item.lines,{once:ctx.exam,onEnd:showQ});const sk=$("[data-skip]",el);if(sk)sk.onclick=()=>showQ(false);
+ const submit=(force)=>{if(!force&&!m.answered(el)){$("[data-w]",el).textContent="Faltan respuestas. Pulsa de nuevo para enviar.";$("[data-go]",el).onclick=()=>submit(true);return}
+  stopSpeak();const ok=m.check(el,!ctx.exam);$("[data-go]",el).remove();if(!ctx.exam)$("[data-tr]",el).hidden=false;ctx.finish(ok/item.questions.length,`${ok}/${item.questions.length} correctas`)};
+ $("[data-go]",el).onclick=()=>submit(false);return{submit:()=>submit(true)}}
+RUN.conv=(el,item,ctx)=>listenRunner(el,item,ctx,"Escucha la conversación y responde.");
+RUN.announce=(el,item,ctx)=>listenRunner(el,item,ctx,"Escucha el anuncio y responde.");
+RUN.talk=(el,item,ctx)=>listenRunner(el,item,ctx,"Escucha la clase y responde. Toma notas si quieres.");
+RUN.respond=(el,item,ctx)=>{const q={q:"Choose the best response.",o:item.o,why:"La respuesta correcta reacciona de forma natural a lo que se dijo."};const m=mcq([q]);
+ el.innerHTML=`<div class="card"><p class="inst">Escucha y elige la respuesta más adecuada.</p><div data-pl></div><div data-qs hidden style="margin-top:18px">${m.html}<div class="actions"><button class="btn primary" data-go>Comprobar</button></div></div><p data-tr hidden class="ctx" style="margin-top:14px"><b>Audio:</b> ${esc(item.prompt)}</p></div>`;
+ m.bind(el);player($("[data-pl]",el),[{v:Math.random()<.5?0:1,t:item.prompt}],{once:ctx.exam,label:"Escuchar",onEnd:(na)=>{$("[data-qs]",el).hidden=false;if(na)$("[data-tr]",el).hidden=false}});
+ const submit=()=>{const ok=m.check(el,!ctx.exam);$("[data-go]",el).remove();if(!ctx.exam)$("[data-tr]",el).hidden=false;ctx.finish(ok,ok?"Correcta":"Incorrecta")};$("[data-go]",el).onclick=submit;return{submit}};
+RUN.build=(el,item,ctx)=>{const end=(item.answer.match(/[.?!]$/)||["."])[0];const ws=item.answer.replace(/[.?!]$/,"").split(/\s+/);
+ let order=shuffle(ws.map((_,i)=>i));if(ws.length>2&&order.every((v,i)=>v===i))order=order.reverse();let ans=[];
+ el.innerHTML=`<div class="card"><p class="inst">Ordena las palabras para formar una respuesta correcta.</p><div class="ctx"><b>Mensaje:</b> ${esc(item.ctx)}</div><p class="small mute">Tu respuesta (toca una palabra para quitarla):</p><div class="tiles ans" data-a></div><p class="small mute" style="margin-top:14px">Palabras disponibles:</p><div class="tiles" data-b></div><div class="actions"><button class="btn primary" data-go>Comprobar</button><button class="btn" data-clr>Reiniciar</button></div><p data-res></p></div>`;
+ const A=$("[data-a]",el),B=$("[data-b]",el);
+ const draw=()=>{A.innerHTML=ans.map(i=>`<button class="tile" data-i="${i}">${esc(ws[i])}</button>`).join("")+(ans.length?`<span style="align-self:center;font-weight:700">${end}</span>`:"");B.innerHTML=order.filter(i=>!ans.includes(i)).map(i=>`<button class="tile" data-i="${i}">${esc(ws[i])}</button>`).join("");
+  $$(".tile",A).forEach(t=>t.onclick=()=>{ans=ans.filter(x=>x!==+t.dataset.i);draw()});$$(".tile",B).forEach(t=>t.onclick=()=>{ans.push(+t.dataset.i);draw()})};draw();
+ $("[data-clr]",el).onclick=()=>{ans=[];draw()};
+ const submit=()=>{const said=ans.map(i=>ws[i]).join(" ");const good=said===ws.join(" ");$$(".tile",el).forEach(t=>t.disabled=true);$("[data-go]",el).remove();$("[data-clr]",el).remove();
+  if(!ctx.exam)$("[data-res]",el).innerHTML=good?`<span style="color:var(--ok);font-weight:700">¡Correcto!</span>`:`<span style="color:var(--red);font-weight:700">Incorrecto.</span> Respuesta: <b>${esc(item.answer)}</b>`;ctx.finish(good?1:0,good?"Correcta":"Incorrecta")};
+ $("[data-go]",el).onclick=submit;return{submit}};
+function writeRunner(el,item,ctx,kind){
+ const mins=kind==="email"?7:10;let left=mins*60,timer=null;
+ const promptHtml=kind==="email"?`<div class="ctx">${esc(item.situation)}</div><p><b>In your email, do the following:</b></p><ul>${item.bullets.map(b=>`<li>${esc(b)}</li>`).join("")}</ul><p class="small mute">Escribe tanto como puedas en ${mins} minutos (≈100–150 palabras).</p>`
+ :`<p class="small mute">${esc(item.course||"")}</p><div class="post" style="border-color:var(--blue)"><b>${esc(item.profName)} (profesor/a)</b>${esc(item.prof)}</div>${item.students.map(s=>`<div class="post"><b>${esc(s.name)}</b>${esc(s.text)}</div>`).join("")}<p class="small mute">Escribe una contribución a la discusión (100+ palabras) en ${mins} minutos.</p>`;
+ const taskText=kind==="email"?`${item.situation}\nIn your email: ${item.bullets.join("; ")}.`:`Professor ${item.profName}: ${item.prof}\n${item.students.map(s=>s.name+": "+s.text).join("\n")}\nWrite a response that contributes to the discussion.`;
+ el.innerHTML=`<div class="two"><div class="card">${promptHtml}</div><div class="card"><div class="actions" style="margin-top:0;justify-content:space-between"><span class="clock" data-c>${fmt(left)}</span><span class="small mute" data-wc>0 palabras</span></div><textarea data-t style="margin-top:12px;min-height:300px" placeholder="Write your ${kind==="email"?"email":"response"} here…" spellcheck="false"></textarea><div class="actions"><button class="btn primary" data-go>${aiOn()?"Enviar y evaluar con IA":"Enviar"}</button><span class="small mute" data-w></span></div></div></div><div data-fb></div>`;
+ const ta=$("[data-t]",el),clock=$("[data-c]",el);
+ ta.oninput=()=>{const n=ta.value.trim()?ta.value.trim().split(/\s+/).length:0;$("[data-wc]",el).textContent=n+" palabras"};
+ timer=setInterval(()=>{left--;clock.textContent=fmt(left);clock.classList.toggle("low",left<=60);if(left<=0){clearInterval(timer);clock.textContent="Tiempo";if(ctx.exam)submit()}},1000);
+ let sent=false;
+ async function submit(){if(sent)return;sent=true;clearInterval(timer);ta.readOnly=true;const btn=$("[data-go]",el);btn.disabled=true;const text=ta.value.trim();const n=text?text.split(/\s+/).length:0;
+  if(aiOn()&&text){$("[data-w]",el).innerHTML=`<span class="spin"></span> Evaluando tu texto…`;
+   try{const fb=await askJSON(evalPrompt(kind,taskText,text));fb.score=Math.max(0,Math.min(5,+fb.score||0));btn.remove();$("[data-w]",el).textContent="";
+    if(!ctx.exam)$("[data-fb]",el).innerHTML=`<div class="card">${renderFeedback(fb)}</div>`;ctx.finish(fb.score/5,`${fb.score}/5 · ${n} palabras`,{fb});return}
+   catch(e){$("[data-w]",el).textContent=e&&e.code==="rate_limited"?"La IA está ocupada; usa la autoevaluación.":"No se pudo evaluar con IA; usa la autoevaluación."}}
+  btn.remove();selfAssess(n)}
+ function selfAssess(n){const crit=kind==="email"?["Cubrí los tres puntos solicitados","Saludo, propósito claro y despedida","Registro adecuado al destinatario","Desarrollé cada punto con detalles","Variedad de oraciones y conectores","Pocos o ningún error gramatical"]:["Mi opinión está clara desde el inicio","Di al menos una razón bien desarrollada","Incluí un ejemplo concreto","Mencioné o respondí a un compañero con una idea nueva","Variedad de oraciones y vocabulario preciso","Pocos o ningún error gramatical"];
+  const auto=kind==="email"?n>=90:n>=100;
+  const box=$("[data-fb]",el);box.innerHTML=`<div class="card"><h3>Autoevaluación</h3><p class="small mute">${aiOn()?"":"La evaluación con IA no está disponible aquí. "}Marca lo que cumpliste con honestidad (${n} palabras; ${auto?"longitud adecuada":"te faltó longitud"}).</p>${crit.map((c,i)=>`<label style="display:flex;gap:10px;align-items:center;min-height:40px"><input type="checkbox" data-k="${i}" style="width:20px;height:20px"> ${esc(c)}</label>`).join("")}<div class="actions"><button class="btn primary" data-sa>Calcular puntaje</button></div></div>`;
+  $("[data-sa]",box).onclick=()=>{const k=$$("[data-k]:checked",box).length+(auto?1:0);const sc=roundHalf(k/(crit.length+1)*5);$("[data-sa]",box).remove();ctx.finish(sc/5,`${sc}/5 (autoevaluación)`)}}
+ $("[data-go]",el).onclick=submit;return{submit,cleanup:()=>clearInterval(timer)}}
+RUN.email=(el,item,ctx)=>writeRunner(el,item,ctx,"email");
+RUN.discussion=(el,item,ctx)=>writeRunner(el,item,ctx,"discussion");
+RUN.repeat=(el,item,ctx)=>{let i=0;const scores=[];
+ el.innerHTML=`<div class="card"><p class="inst">Escucha cada oración y repítela exactamente igual.</p><p class="small mute">Contexto: ${esc(item.context)} · ${item.sentences.length} oraciones de longitud creciente</p><div class="steps">${item.sentences.map(()=>"<i></i>").join("")}</div><div data-body></div></div>`;
+ const body=$("[data-body]",el);
+ function step(){const s=item.sentences[i];$$(".steps i",el).forEach((x,k)=>x.className=k<i?"d":k===i?"c":"");
+  body.innerHTML=`<h3>Oración ${i+1} de ${item.sentences.length}</h3><div data-pl></div><div data-mic style="margin-top:14px" hidden></div><div class="actions" data-act hidden><button class="btn primary" data-ok>Comprobar</button></div><div data-r></div>`;
+  const mic=micBox($("[data-mic]",body),{seconds:Math.max(8,Math.ceil(s.split(" ").length*0.9)+4),placeholder:voiceOn()?"Pulsa Grabar y repite la oración…":"Escribe la oración exactamente como la escuchaste…"});
+  player($("[data-pl]",body),[{v:2,t:s}],{once:ctx.exam,label:"Escuchar oración",onEnd:(na)=>{$("[data-mic]",body).hidden=false;$("[data-act]",body).hidden=false;if(na)$("[data-r]",body).innerHTML=`<p class="ctx">${esc(s)}</p>`}});
+  $("[data-ok]",body).onclick=async()=>{if(mic.active)await mic.stop();const d=lcsDiff(s,mic.text);scores.push(d.score);
+   $("[data-act]",body).innerHTML=`<button class="btn primary" data-n>${i+1<item.sentences.length?"Siguiente oración":"Ver resultado"}</button>`;
+   if(!ctx.exam)$("[data-r]",body).innerHTML=`<p class="diff" style="margin-top:12px">${d.html}</p><p class="small mute">Exactitud: ${Math.round(d.score*100)}% · verde = dijiste la palabra; rojo = faltó o cambió.</p>`;
+   $("[data-n]",body).onclick=()=>{i++;if(i<item.sentences.length)step();else{const avg=scores.reduce((a,b)=>a+b,0)/scores.length;body.innerHTML="";$$(".steps i",el).forEach(x=>x.className="d");ctx.finish(avg,`${Math.round(avg*100)}% de exactitud`)}}}}
+ step();return{submit:()=>{const avg=scores.length?scores.reduce((a,b)=>a+b,0)/item.sentences.length:0;stopSpeak();ctx.finish(avg,"Tiempo agotado")}}};
+RUN.interview=(el,item,ctx)=>{let i=0;const answers=[];
+ el.innerHTML=`<div class="card"><p class="inst">Entrevista: ${esc(item.topic)}</p><p class="small mute">Escucha cada pregunta y responde durante 45 segundos.${voiceOn()?"":" Sin dictado por voz disponible: escribe lo que dirías."}</p><div class="steps">${item.qs.map(()=>"<i></i>").join("")}</div><div data-body></div></div><div data-fb></div>`;
+ const body=$("[data-body]",el);
+ function step(){const q=item.qs[i];$$(".steps i",el).forEach((x,k)=>x.className=k<i?"d":k===i?"c":"");
+  body.innerHTML=`<h3>Pregunta ${i+1} de ${item.qs.length}</h3><div data-pl></div>${ctx.exam?"":`<details><summary>Mostrar texto de la pregunta</summary><p>${esc(q)}</p></details>`}<div data-mic style="margin-top:14px" hidden></div><div class="actions" data-act hidden><button class="btn primary" data-ok>Guardar respuesta y seguir</button></div>`;
+  const mic=micBox($("[data-mic]",body),{seconds:45,placeholder:"Tu respuesta…"});
+  player($("[data-pl]",body),[{v:1,t:q}],{once:ctx.exam,label:"Escuchar pregunta",onEnd:(na)=>{$("[data-mic]",body).hidden=false;$("[data-act]",body).hidden=false;if(na)$("[data-mic]",body).insertAdjacentHTML("beforebegin",`<p class="ctx">${esc(q)}</p>`)}});
+  $("[data-ok]",body).onclick=async()=>{if(mic.active)await mic.stop();answers.push(mic.text);i++;if(i<item.qs.length)step();else done()}}
+ async function done(){$$(".steps i",el).forEach(x=>x.className="d");const text=item.qs.map((q,k)=>`Q${k+1}: ${q}\nA${k+1}: ${answers[k]||"(no answer)"}`).join("\n\n");
+  body.innerHTML=`<h3>Tus respuestas</h3>${item.qs.map((q,k)=>`<div class="post"><b>${esc(q)}</b>${esc(answers[k]||"(sin respuesta)")}</div>`).join("")}<p data-w></p>`;
+  const total=answers.join(" ").trim();
+  if(aiOn()&&total){$("[data-w]",body).innerHTML=`<span class="spin"></span> Evaluando tus respuestas…`;
+   try{const fb=await askJSON(evalPrompt("interview",`Interview on "${item.topic}". Questions and transcribed answers below.`,text));fb.score=Math.max(0,Math.min(5,+fb.score||0));$("[data-w]",body).textContent="";
+    if(!ctx.exam)$("[data-fb]",el).innerHTML=`<div class="card">${renderFeedback(fb,"Evaluación de tu entrevista")}</div>`;ctx.finish(fb.score/5,`${fb.score}/5`,{fb});return}catch(e){$("[data-w]",body).textContent="No se pudo evaluar con IA."}}
+  const wc=total?total.split(/\s+/).length:0;const sc=Math.min(5,roundHalf(wc/item.qs.length/18));$("[data-w]",body).textContent=`Puntaje aproximado por extensión de respuestas (${wc} palabras en total): ${sc}/5. La evaluación con IA da una valoración real.`;ctx.finish(sc/5,`${sc}/5 (aprox.)`)}
+ step();return{submit:()=>{stopSpeak();done()}}};
+
+/* ===================== AI GENERATION ===================== */
+const GEN={
+ctest:`Write an original paragraph of exactly 5 sentences (75-95 words) in clear academic English (B1-C1) about a random topic from science, history, social science, the arts, or campus life. Avoid apostrophes, numbers and abbreviations. JSON: {"title": string, "text": string}`,
+daily:`Write an original short everyday-life text for TOEFL "Read in Daily Life" practice: pick one kind (email, notice, text-message chat, advertisement, schedule, social media post). 90-150 words; use \\n for line breaks. Then 3 multiple-choice questions (detail, inference, purpose). JSON: {"title": string, "kind": string, "text": string, "questions": [{"q": string, "options": [4 strings], "answer": index 0-3, "why_es": "explanation in Spanish"}]}`,
+academic:`Write an original TOEFL-style academic passage (230-300 words, 4 paragraphs separated by \\n\\n) on a random university topic (biology, geology, history, art history, psychology, economics, astronomy...). Wrap exactly one vocabulary word in **double asterisks**. Then 5 questions: factual, vocabulary (about the starred word, phrased: The word "X" in paragraph N is closest in meaning to), negative factual (NOT), inference, and purpose. JSON: {"title": string, "text": string, "questions": [{"q": string, "options": [4 strings], "answer": 0-3, "why_es": "brief Spanish explanation"}]}`,
+respond:`Create 5 original items for TOEFL "Listen and Choose a Response": a short spoken sentence on campus or daily life (question, request, statement or complaint) and 4 written replies, exactly one natural and appropriate; distractors should repeat words or misunderstand. JSON: {"items": [{"prompt": string, "options": [4 strings], "answer": 0-3}]}`,
+conv:`Write an original TOEFL-style conversation (9-12 turns) between two people in a university or daily-life setting (student-professor, student-staff, two students). Speaker 0 and speaker 1 alternate. Then 3 questions (main problem, detail, inference or what will happen next). JSON: {"title": string, "lines": [{"speaker": 0 or 1, "text": string}], "questions": [{"q": string, "options": [4], "answer": 0-3, "why_es": string}]}`,
+announce:`Write an original campus or public announcement (90-120 words) for TOEFL listening practice, then 2 questions. JSON: {"title": string, "lines": [{"speaker": 0, "text": string}], "questions": [{"q": string, "options": [4], "answer": 0-3, "why_es": string}]}`,
+talk:`Write an original mini-lecture by a professor (220-280 words) on a random academic topic, split into 3-5 paragraphs, conversational spoken style. Then 4 questions: main idea, detail, function/purpose of a statement, inference. JSON: {"title": "Discipline: topic", "lines": [{"speaker": 0, "text": string}], "questions": [{"q": string, "options": [4], "answer": 0-3, "why_es": string}]}`,
+build:`Create 6 original TOEFL "Build a Sentence" items: a short message from person A (campus/daily life) and person B's natural reply of 7-11 words, no commas, ending with . or ?; include some indirect questions and varied tenses. JSON: {"items": [{"context": string, "answer": string}]}`,
+email:`Create an original TOEFL "Write an Email" prompt: a realistic situation (2-3 sentences, says who to write to) and exactly 3 bullet tasks. JSON: {"situation": string, "bullets": [3 strings]}`,
+discussion:`Create an original TOEFL "Academic Discussion" prompt: a professor's question (60-90 words) for a named university course, and two student posts (40-60 words each) with different views. JSON: {"profName": "Dr. Lastname", "course": string, "prof": string, "students": [{"name": string, "text": string}, {"name": string, "text": string}]}`,
+repeat:`Create an original TOEFL "Listen and Repeat" set: one setting (e.g., orientation, guided tour) and 7 sentences a guide would say, increasing in length from 4 to 17 words. JSON: {"context": string, "sentences": [7 strings]}`,
+interview:`Create an original TOEFL "Take an Interview" set on one theme: 4 questions going from personal and simple to opinion-based. JSON: {"topic": string, "qs": [4 strings]}`};
+const nq=qs=>(qs||[]).map(q=>{const a=Math.max(0,Math.min(3,q.answer|0));return{q:String(q.q),o:[q.options[a],...q.options.filter((_,i)=>i!==a)].map(String),why:String(q.why_es||"")}});
+function normalize(t,r){
+ const L=x=>(x||[]).map(l=>({v:t==="conv"?(+l.speaker?1:0):t==="announce"?2:3,t:String(l.text)}));
+ switch(t){case"ctest":return[{title:String(r.title),text:String(r.text)}];
+ case"daily":case"academic":return[{title:String(r.title),kind:t==="daily"?String(r.kind||"Text"):undefined,text:String(r.text),questions:nq(r.questions)}];
+ case"respond":return r.items.map(x=>{const a=x.answer|0;return{prompt:String(x.prompt),o:[x.options[a],...x.options.filter((_,i)=>i!==a)].map(String)}});
+ case"conv":case"announce":case"talk":return[{title:String(r.title),lines:L(r.lines),questions:nq(r.questions)}];
+ case"build":return r.items.map(x=>({ctx:String(x.context),answer:String(x.answer).replace(/,/g,"").trim()}));
+ case"email":return[{situation:String(r.situation),bullets:r.bullets.map(String)}];
+ case"discussion":return[{profName:String(r.profName),course:String(r.course||""),prof:String(r.prof),students:r.students.map(s=>({name:String(s.name),text:String(s.text)}))}];
+ case"repeat":return[{context:String(r.context),sentences:r.sentences.map(String)}];
+ case"interview":return[{topic:String(r.topic),qs:r.qs.map(String)}]}}
+async function generate(t,btn){const old=btn.innerHTML;btn.disabled=true;btn.innerHTML=`<span class="spin"></span> Generando…`;
+ try{const r=await askJSON(GEN[t]+"\nAll content must be original (not copied from ETS materials). Return only the JSON.","default");const items=normalize(t,r);if(!items||!items.length)throw 0;
+  S.custom[t]=(S.custom[t]||[]).concat(items).slice(-30);save();startPractice(t,items[0])}
+ catch(e){btn.disabled=false;btn.innerHTML=old;toast(e&&e.code==="rate_limited"?"La IA está ocupada, intenta en un momento.":e&&e.code==="not_granted"?"No diste permiso a la IA; puedes seguir con el banco incluido.":"No se pudo generar el ejercicio. Intenta de nuevo.")}}
+function toast(msg){const t=document.createElement("div");t.textContent=msg;t.style.cssText="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:10px;z-index:9;max-width:90vw";document.body.appendChild(t);setTimeout(()=>t.remove(),4000)}
+
+/* ===================== VIEWS ===================== */
+const view=$("#view");let curView="",handle=null;
+function cleanup(){stopSpeak();if(handle&&handle.cleanup)handle.cleanup();handle=null;if(DICT){try{Promise.resolve(DICT.stop()).catch(()=>{})}catch(e){}}else if(srActive)voiceStop();dictTarget=null;clearInterval(mockTimer)}
+function render(){cleanup();const h=(location.hash||"#inicio").slice(1);const v=["inicio","hoy","reading","listening","writing","speaking","vocabulario","simulacro"].includes(h)?h:"inicio";curView=v;
+ $$("#nav a").forEach(a=>a.classList.toggle("on",a.getAttribute("href")==="#"+v));
+ ({inicio:vHome,hoy:vToday,vocabulario:vVocab,simulacro:vMock}[v]||vSection)(v);window.scrollTo(0,0)}
+window.addEventListener("hashchange",render);
+document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest('a[href^="#"]');if(l&&l.getAttribute("href")===(location.hash||"#inicio")){e.preventDefault();render()}});
+
+function capsNote(){const miss=[];if(!canAudio())miss.push("audio");if(!voiceOn())miss.push(IS_APP?"dictado por voz":"dictado por voz (usa Chrome o la app de escritorio)");if(!aiOn())miss.push(IS_APP?"corrección y generación con IA (añade tu clave de API en Hoy › Ajustes)":"corrección y generación con IA");
+ return miss.length?`<div class="note">No disponible en esta vista: ${miss.join(", ")}. Lo demás funciona; donde falte, la app ofrece una alternativa (transcripción, escribir la respuesta, autoevaluación).</div>`:""}
+function vHome(){
+ const secs=Object.keys(SECS),sc=secs.map(secScore),bands=sc.map(band),have=bands.filter(b=>b!=null);
+ const overall=have.length?roundHalf(have.reduce((a,b)=>a+b,0)/have.length):null;const tgt=+S.settings.target||4.5;const pos=b=>((b-1)/5*100).toFixed(1)+"%";
+ const days=[...Array(14)].map((_,k)=>{const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-13+k);const e=+d+864e5;return S.attempts.filter(a=>a.d>=+d&&a.d<e).length});const mx=Math.max(1,...days);
+ let streak=0;for(let k=13;k>=0;k--){if(days[k])streak++;else if(k<13)break}
+ const allT=Object.keys(TASKS).filter(t=>SECS[TASKS[t].sec]);const rec=allT.map(t=>({t,...taskStats(t)})).sort((a,b)=>(a.n?a.avg:-1)-(b.n?b.avg:-1))[0];
+ let cd="";if(S.settings.examDate){const n=Math.ceil((new Date(S.settings.examDate+"T00:00:00")-new Date())/864e5);cd=n>=0?`Faltan <b>${n}</b> días para tu examen.`:"La fecha del examen ya pasó."}
+ view.innerHTML=`<h1>Entrena para el TOEFL iBT 2026</h1><p class="mute" style="max-width:62ch">Las cuatro secciones del formato nuevo con ejercicios cronometrados, audio, dictado por voz, corrección con IA y un simulacro. Tu progreso se guarda ${syncState==="cloud"?"en tu cuenta":"en este navegador"}.</p>
+ ${capsNote()}
+ <div class="card"><div class="hero"><div class="big"><b>${overall??"—"}</b><span class="mute">${overall?`Banda estimada · ${CEFR[overall]}`:"Aún sin datos"}</span></div>
+ <div class="ruler"><div class="scale"><span></span><div class="ticks">${[1,2,3,4,5,6].map(n=>`<span>${n}</span>`).join("")}</div></div>
+ ${secs.map((s,i)=>`<div class="row"><b>${SECS[s].name}</b><div class="track"><div class="fill" style="width:${bands[i]?pos(bands[i]):0}"></div><div class="target" style="left:${pos(tgt)}" title="Meta ${tgt}"></div></div><span class="val">${bands[i]??"—"}</span></div>`).join("")}
+ <p class="small mute" style="margin:6px 0 0"><span style="color:var(--red)">┆</span> Tu meta: banda ${tgt}. Estimación con tus últimos 25 ejercicios por sección.</p></div></div></div>
+ <div class="grid"><div class="card"><h3>Recomendado ahora</h3><p><b>${TASKS[rec.t].name}</b> <span class="tag">${SECS[TASKS[rec.t].sec].name}</span></p><p class="mute small">${rec.n?`Es tu tarea más floja (${Math.round(rec.avg*100)}% en los últimos intentos).`:"Todavía no la has practicado."}</p><div class="actions"><button class="btn primary" data-rec>Practicar</button><a class="btn" href="#simulacro">Hacer simulacro</a></div></div>
+ <div class="card"><h3>Actividad · últimos 14 días</h3><p class="small mute">${S.attempts.length} ejercicios en total · racha de ${streak} ${streak===1?"día":"días"}</p><div class="bars">${days.map(n=>`<div class="${n?"":"z"}" style="height:${Math.max(4,n/mx*100)}%" title="${n} ejercicios"></div>`).join("")}</div></div>
+ <div class="card"><h3>Plan de hoy</h3>${(()=>{const P=todayPlan(),m=minsOn(dKey(Date.now()));return`<div style="display:flex;gap:14px;align-items:center"><div style="flex:none">${ring(m/P.goal,84)}</div><p style="margin:0"><b>${Math.round(m)} de ${P.goal} min</b><br><span class="small mute">${P.items.filter(x=>x.done).length}/${P.items.length} ejercicios · racha ${goalStreak()}</span></p></div>`})()}<div class="actions"><a class="btn primary" href="#hoy">Ir al plan</a></div><label class="small" style="display:block;margin-top:10px">Banda meta <select data-tg>${[3,3.5,4,4.5,5,5.5,6].map(b=>`<option ${b===tgt?"selected":""}>${b}</option>`).join("")}</select></label><p class="small mute" style="margin-top:6px">${cd||"Añade la fecha del examen en el plan de hoy."}</p></div></div>
+ <div class="card"><h2>Formato del examen (desde enero de 2026)</h2><p class="mute small">≈90 minutos, sin descanso. Reading y Listening son adaptativos. Cada sección y el total se reportan en bandas de 1 a 6 alineadas con el MCER.</p><div class="scroll"><table class="stack"><thead><tr><th>Sección</th><th>Tareas</th><th>Tiempo</th><th>Ítems</th></tr></thead><tbody>${secs.map(s=>`<tr><td><b>${SECS[s].name}</b></td><td>${SECS[s].tasks.map(t=>TASKS[t].name).join(" · ")}</td><td class="n">${SECS[s].time}</td><td class="n">${SECS[s].items}</td></tr>`).join("")}</tbody></table></div>
+ <p class="small mute" style="margin-top:12px">Escala: 6 ≈ C2 · 5 ≈ C1 · 4 ≈ B2 · 3 ≈ B1 · 2 ≈ A2 · 1 ≈ A1. Muchas universidades piden entre 4 y 5; verifica el requisito de tu programa.</p></div>
+ <details class="card"><summary>Datos y respaldo</summary><p class="small">Puedes copiar tu progreso como texto para guardarlo o pasarlo a otro dispositivo.</p><div class="actions"><button class="btn" data-cp>Copiar progreso</button><button class="btn" data-im>Importar progreso</button><button class="btn" data-rs style="color:var(--red)">Borrar todo</button></div><textarea data-io hidden placeholder="Pega aquí el texto copiado y pulsa Importar de nuevo"></textarea><p class="small" data-msg></p></details>`;
+ $("[data-rec]").onclick=()=>startPractice(rec.t);
+ $("[data-tg]").onchange=e=>{S.settings.target=+e.target.value;save();render()};
+  $("[data-cp]").onclick=()=>{navigator.clipboard.writeText(JSON.stringify(S)).then(()=>$("[data-msg]").textContent="Copiado.",()=>{const io=$("[data-io]");io.hidden=false;io.value=JSON.stringify(S);io.select();$("[data-msg]").textContent="Copia el texto manualmente."})};
+ $("[data-im]").onclick=()=>{const io=$("[data-io]");if(io.hidden||!io.value.trim()){io.hidden=false;io.value="";io.focus();return}try{const d=JSON.parse(io.value);if(!Array.isArray(d.attempts))throw 0;S=Object.assign(DEF(),d);fixS();save();render()}catch(e){$("[data-msg]").textContent="El texto no es válido."}};
+ let armed=false;$("[data-rs]").onclick=e=>{if(!armed){armed=true;e.target.textContent="Pulsa otra vez para confirmar";return}S=DEF();fixS();save();render()};
+}
+function vSection(sec){const s=SECS[sec];
+ view.innerHTML=`<h1>${s.name}</h1><p class="mute" style="max-width:62ch">${s.desc} <span class="tag">${s.time}</span> <span class="tag">${s.items}</span></p>${capsNote()}
+ <div class="grid">${s.tasks.map(t=>{const T=TASKS[t],st=taskStats(t),n=pool(t).length;return`<div class="card task"><h3>${T.name}</h3><p class="mute small" style="margin:0">${T.es}</p>
+ <div class="meta"><span class="tag">${n} ejercicios</span><span class="tag">${st.n?`${st.n} intentos · ${Math.round(st.avg*100)}%`:"sin intentos"}</span>${st.n?`<span class="tag">banda ≈ ${band(st.avg)}</span>`:""}</div>
+ <div class="actions" style="margin-top:6px"><button class="btn primary" data-p="${t}">Practicar</button>${aiOn()?`<button class="btn hl" data-g="${t}">${ICON.spark}Generar nuevo con IA</button>`:""}</div>
+ <details><summary>Estrategias</summary><ul>${T.tips.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></details></div>`}).join("")}</div>`;
+ $$("[data-p]").forEach(b=>b.onclick=()=>startPractice(b.dataset.p));$$("[data-g]").forEach(b=>b.onclick=()=>generate(b.dataset.g,b));
+}
+function startPractice(t,item,plan){cleanup();curView="practice";const T=TASKS[t];item=item||(t==="vocabq"?{}:nextItem(t));let el0=0;
+ const backHref=plan?"#hoy":"#"+(SECS[T.sec]?T.sec:"vocabulario"),backName=plan?"Plan de hoy":(SECS[T.sec]?SECS[T.sec].name:"Vocabulario");
+ view.innerHTML=`<div class="ph"><a class="btn" href="${backHref}" data-back>← ${backName}</a><h2>${T.name}</h2>${plan?`<span class="tag">Plan de hoy · ${plan.idx+1}/${plan.total}</span>`:""}<span class="clock" data-el>0:00</span></div><div data-run></div><div data-res></div>`;
+ $("[data-back]").onclick=e=>{if(location.hash===backHref){e.preventDefault();render()}};
+ const tick=setInterval(()=>{const c=$("[data-el]");if(!c)return clearInterval(tick);c.textContent=fmt(++el0)},1000);
+ const ctx={exam:false,finish:(score,label)=>{clearInterval(tick);record(t,score,{dur:el0});const b=band(score);
+  let nx=null;if(plan){const P=S.daily[plan.day];if(P&&P.items[plan.idx]){P.items[plan.idx].done=true;P.items[plan.idx].s=score;save()}nx=P?P.items.findIndex(x=>!x.done):-1}
+  const planBtns=plan?(nx>=0?`<button class="btn primary" data-pn>Siguiente del plan</button><a class="btn" href="#hoy">Ver plan</a>`:`<a class="btn primary" href="#hoy">Plan completado · ver resumen</a>`):"";
+  $("[data-res]").innerHTML=`<div class="result"><b>${esc(label)}</b>${SECS[T.sec]?`<span>Equivale a banda ≈ <b style="font-size:20px">${b}</b> (${CEFR[b]})</span>`:""}<span style="flex:1"></span>${plan?planBtns:`<button class="btn primary" data-nx>Siguiente ejercicio</button><button class="btn" data-ag>Repetir este</button>${aiOn()&&GEN[t]?`<button class="btn hl" data-gn>${ICON.spark}Nuevo con IA</button>`:""}`}</div>`;
+  const pn=$("[data-pn]");if(pn)pn.onclick=()=>startPlanItem(plan.day,nx);
+  const nb=$("[data-nx]");if(nb){nb.onclick=()=>startPractice(t);$("[data-ag]").onclick=()=>startPractice(t,item)}const g=$("[data-gn]");if(g)g.onclick=()=>generate(t,g);
+  $("[data-res]").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"nearest"})}};
+ handle=RUN[t]($("[data-run]"),item,ctx);window.scrollTo(0,0)}
+
+/* ===================== DAILY PLAN ===================== */
+const distract=v=>{const same=shuffle(VOCAB.filter(x=>x!==v&&x[1]===v[1]&&x[3]!==v[3])),other=shuffle(VOCAB.filter(x=>x!==v&&x[1]!==v[1]));return same.concat(other).slice(0,3).map(x=>x[3])};
+const EST={ctest:4,daily:5,academic:9,respond:2,conv:4,announce:3,talk:6,build:2,email:9,discussion:12,repeat:5,interview:6,vocabq:5,vocab:5,mock:20};
+const dKey=d=>{d=new Date(d);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const minsOn=key=>S.attempts.filter(a=>dKey(a.d)===key).reduce((m,a)=>m+(a.dur!=null?a.dur/60:(EST[a.t]||4)),0);
+const goalOf=key=>(S.daily[key]&&S.daily[key].goal)||+S.settings.goalMin||30;
+function examDays(){if(!S.settings.examDate)return null;return Math.ceil((new Date(S.settings.examDate+"T00:00:00")-new Date().setHours(0,0,0,0))/864e5)}
+function goalStreak(){let n=0;const d=new Date();if(minsOn(dKey(d))<goalOf(dKey(d)))d.setDate(d.getDate()-1);while(minsOn(dKey(d))>=goalOf(dKey(d))&&n<999){n++;d.setDate(d.getDate()-1)}return n}
+function weekDays(){const d=new Date();const dow=(d.getDay()+6)%7;let n=0;for(let k=0;k<=dow;k++){const x=new Date();x.setDate(x.getDate()-k);if(minsOn(dKey(x))>=goalOf(dKey(x)))n++}return n}
+function makePlan(goal){
+ const secs=Object.keys(SECS),cnt={},items=[{t:"vocabq",done:false}];let tot=EST.vocabq;const used={};
+ const weak=sec=>{const v=secScore(sec);return v==null?.65:1-v+.15};
+ const pickTask=sec=>{const ts=SECS[sec].tasks.slice().sort((a,b)=>{const A=taskStats(a),B=taskStats(b);return((A.n?A.avg:-.2)+(used[a]||0)*.6+Math.random()*.15)-((B.n?B.avg:-.2)+(used[b]||0)*.6+Math.random()*.15)});
+  const fit=ts.find(t=>EST[t]<=Math.max(6,goal-tot+3));return fit||ts.sort((a,b)=>EST[a]-EST[b])[0]};
+ const days=examDays();const order=secs.slice().sort((a,b)=>weak(b)-weak(a));
+ if(goal>=25)order.forEach(sec=>{const t=pickTask(sec);items.push({t,done:false});used[t]=(used[t]||0)+1;cnt[sec]=(cnt[sec]||0)+1;tot+=EST[t]});
+ let guard=0;while(tot<goal&&items.length<12&&guard++<40){const sec=secs.slice().sort((a,b)=>weak(b)/(1+(cnt[b]||0))-weak(a)/(1+(cnt[a]||0)))[0];const t=pickTask(sec);items.push({t,done:false});used[t]=(used[t]||0)+1;cnt[sec]=(cnt[sec]||0)+1;tot+=EST[t]}
+ const first=items.shift();items.sort((a,b)=>secs.indexOf(TASKS[a.t].sec)-secs.indexOf(TASKS[b.t].sec));items.unshift(first);
+ return{goal,items,mockHint:days!=null&&days>=0&&days<=14}}
+function todayPlan(){const k=dKey(Date.now());if(!S.daily[k]){S.daily[k]=makePlan(+S.settings.goalMin||30);const keys=Object.keys(S.daily).sort();if(keys.length>60)keys.slice(0,keys.length-60).forEach(x=>delete S.daily[x]);save()}return S.daily[k]}
+function startPlanItem(day,idx){const P=S.daily[day];if(!P||!P.items[idx])return render();startPractice(P.items[idx].t,null,{day,idx,total:P.items.length})}
+RUN.vocabq=(el,item,ctx)=>{const box=w=>S.vocab[w]||0;const mn=Math.min(...VOCAB.map(v=>box(v[0])));
+ const pick=shuffle(VOCAB.filter(v=>box(v[0])<=mn+1)).concat(shuffle(VOCAB)).filter((v,i,a)=>a.indexOf(v)===i).slice(0,10);
+ const qs=pick.map(v=>({q:`"${v[0]}" (${v[1]})`,o:[v[3],...distract(v)],why:v[2],w:v[0]}));
+ const m=mcq(qs);el.innerHTML=`<div class="card"><p class="inst">Elige el significado en español de cada palabra.</p>${m.html}<div class="actions"><button class="btn primary" data-go>Comprobar</button></div></div>`;m.bind(el);
+ const submit=()=>{const ok=m.check(el,!ctx.exam);$$(".q",el).forEach((qe,i)=>{const sel=$(".opt.sel",qe);const w=qs[i].w;S.vocab[w]=sel&&sel.dataset.o==="0"?Math.min(4,box(w)+1):0});save();$("[data-go]",el).remove();ctx.finish(ok/qs.length,`${ok}/${qs.length} correctas`)};
+ $("[data-go]",el).onclick=submit;return{submit}};
+const ring=(p,size=150)=>{const r=size/2-12,c=2*Math.PI*r,f=Math.min(1,p);return`<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img" aria-label="${Math.round(p*100)}% de la meta"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--line)" stroke-width="14"/><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${p>=1?"var(--ok)":"var(--blue)"}" stroke-width="14" stroke-linecap="round" stroke-dasharray="${(c*f).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 ${size/2} ${size/2})"/></svg>`};
+function phase(){const d=examDays();if(d==null)return["Sin fecha de examen","Añade la fecha en Ajustes y el plan se ajusta a tu fase de preparación."];
+ if(d<0)return["Examen realizado","Actualiza la fecha si vas a presentarlo de nuevo."];
+ if(d<=14)return["Fase 3 · Recta final",`Faltan ${d} días. Haz un simulacro completo cada 3 o 4 días, repasa tus errores y duerme bien la noche anterior.`];
+ if(d<=60)return["Fase 2 · Práctica intensiva",`Faltan ${d} días. Practica con tiempo, haz un simulacro de sección cada semana y prioriza tu sección más débil.`];
+ return["Fase 1 · Fundamentos",`Faltan ${d} días. Construye vocabulario y precisión; no te preocupes aún por la velocidad.`]}
+async function scheduleReminder(){if(!LN)return"";try{await LN.cancel({notifications:[{id:7}]})}catch(e){}if(!S.settings.remind)return"Recordatorio desactivado.";
+ try{let p=await LN.checkPermissions();if(p.display!=="granted")p=await LN.requestPermissions();if(p.display!=="granted")return"Sin permiso para notificaciones.";
+  const[h,m]=S.settings.remind.split(":").map(Number);await LN.schedule({notifications:[{id:7,title:"Hora de practicar TOEFL",body:`Tu meta de hoy: ${S.settings.goalMin} minutos. ¡Sigue tu racha!`,schedule:{on:{hour:h,minute:m},allowWhileIdle:true}}]});return`Recordatorio diario a las ${S.settings.remind}.`}catch(e){return"No se pudo programar el recordatorio."}}
+function vToday(){const P=todayPlan(),k=dKey(Date.now()),mins=minsOn(k),goal=P.goal,pct=mins/goal,next=P.items.findIndex(x=>!x.done),done=P.items.filter(x=>x.done).length;
+ const [ph,phd]=phase(),streak=goalStreak(),wk=weekDays(),dw=+S.settings.daysWeek||5;
+ const cells=[...Array(28)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-27+i);const kk=dKey(d),m=minsOn(kk),g=goalOf(kk),r=m/g;return`<i title="${d.toLocaleDateString("es")}: ${Math.round(m)} min" style="background:${m===0?"var(--line)":r>=1?"var(--ok)":"var(--blue)"};opacity:${m===0?1:r>=1?1:.35+.5*r}"></i>`}).join("");
+ const fmtDate=new Date().toLocaleDateString("es",{weekday:"long",day:"numeric",month:"long"});
+ view.innerHTML=`<h1>Plan de hoy</h1><p class="mute" style="text-transform:capitalize">${fmtDate}</p>
+ <div class="card"><div class="hero" style="grid-template-columns:minmax(0,170px) minmax(0,1fr)"><div style="position:relative;display:grid;place-items:center">${ring(pct)}<div style="position:absolute;text-align:center"><b style="font:700 30px Lexend,sans-serif">${Math.round(mins)}</b><br><span class="small mute">de ${goal} min</span></div></div>
+ <div><h2 style="margin-bottom:6px">${pct>=1?"¡Meta de hoy cumplida!":next<0?"Plan terminado":`Te faltan ${Math.max(0,Math.ceil(goal-mins))} minutos`}</h2>
+ <p class="mute">${done} de ${P.items.length} ejercicios del plan · racha de ${streak} ${streak===1?"día":"días"} cumpliendo la meta · esta semana ${wk}/${dw} días</p>
+ <div class="actions">${next>=0?`<button class="btn primary" data-start>${done?"Continuar el plan":"Empezar el plan"}</button>`:`<button class="btn primary" data-more>Agregar 10 minutos más</button>`}${!done?`<button class="btn" data-regen>Cambiar plan</button>`:""}</div></div></div></div>
+ <div class="two"><div class="card"><h3>Ejercicios de hoy</h3>${P.mockHint?`<p class="why">Estás en la recta final: además del plan, haz un <a href="#simulacro">simulacro</a> cada 3 o 4 días.</p>`:""}
+ <div>${P.items.map((x,i)=>{const T=TASKS[x.t];return`<div class="q" style="display:flex;gap:12px;align-items:center"><span class="bub" style="${x.done?"background:var(--ok);border-color:var(--ok);color:#fff":i===next?"border-color:var(--blue);color:var(--blue)":""}">${x.done?"✓":i+1}</span><div style="flex:1"><b>${T.name}</b><br><span class="small mute">${SECS[T.sec]?SECS[T.sec].name:"Vocabulario"} · ~${EST[x.t]} min${x.done&&x.s!=null?` · ${Math.round(x.s*100)}%`:""}</span></div>${!x.done?`<button class="btn" data-i="${i}" style="min-height:40px">${i===next?"Empezar":"Hacer"}</button>`:""}</div>`}).join("")}</div></div>
+ <div><div class="card"><h3>${ph}</h3><p class="small">${phd}</p></div>
+ <div class="card"><h3>Últimas 4 semanas</h3><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px">${cells}</div><p class="small mute" style="margin-top:8px">Verde: meta cumplida · azul: practicaste algo · gris: sin práctica.</p></div></div></div>
+ <div class="card"><h3>Ajustes del plan</h3><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr))">
+ <label class="small">Meta diaria<br><select data-s="goalMin">${[10,15,20,30,45,60,90].map(m=>`<option value="${m}" ${m==S.settings.goalMin?"selected":""}>${m} minutos</option>`).join("")}</select></label>
+ <label class="small">Días de estudio por semana<br><select data-s="daysWeek">${[3,4,5,6,7].map(m=>`<option ${m==S.settings.daysWeek?"selected":""}>${m}</option>`).join("")}</select></label>
+ <label class="small">Fecha del examen<br><input type="date" data-s="examDate" value="${esc(S.settings.examDate)}"></label>
+ ${LN?`<label class="small">Recordatorio diario<br><input type="time" data-s="remind" value="${esc(S.settings.remind)}" style="font:16px inherit;min-height:40px;padding:6px 10px;border-radius:8px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink)"></label>`:""}</div>
+ <p class="small mute" data-rm>La nueva meta se aplica desde el plan de mañana (o pulsa «Cambiar plan» si aún no empiezas el de hoy).</p>
+ ${IS_APP?`<h3 style="margin-top:18px">Corrección con IA (opcional)</h3><p class="small mute">Para que la app evalúe tus textos y entrevistas y genere ejercicios nuevos, pega tu clave de API de Anthropic (console.anthropic.com). Se guarda solo en este teléfono y el uso se cobra a tu cuenta de API.</p>
+ <div class="actions"><input type="password" data-k placeholder="sk-ant-…" value="${esc(S.settings.apiKey)}" style="flex:1;min-width:200px;font:16px inherit;min-height:44px;padding:8px 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink)"><select data-s="model"><option value="claude-sonnet-5-5" ${S.settings.model==="claude-sonnet-5-5"?"selected":""}>Sonnet (recomendado)</option><option value="claude-haiku-5-5" ${S.settings.model==="claude-haiku-5-5"?"selected":""}>Haiku (más económico)</option><option value="claude-opus-5-5" ${S.settings.model==="claude-opus-5-5"?"selected":""}>Opus (más preciso)</option></select><button class="btn" data-ks>Guardar clave</button></div><p class="small" data-km></p>`:""}</div>`;
+ const st=$("[data-start]");if(st)st.onclick=()=>startPlanItem(k,next);
+ $$("[data-i]").forEach(b=>b.onclick=()=>startPlanItem(k,+b.dataset.i));
+ const rg=$("[data-regen]");if(rg)rg.onclick=()=>{S.daily[k]=makePlan(+S.settings.goalMin||30);save();render()};
+ const mo=$("[data-more]");if(mo)mo.onclick=()=>{const extra=makePlan(10).items.slice(1);P.items.push(...extra);P.goal=goal+10;save();render()};
+ $$("[data-s]").forEach(inp=>inp.onchange=async()=>{const f=inp.dataset.s;S.settings[f]=["goalMin","daysWeek"].includes(f)?+inp.value:inp.value;save();
+  if(f==="remind"||f==="goalMin"){const msg=await scheduleReminder();if(f==="remind"){$("[data-rm]").textContent=msg;return}}if(f!=="model")render()});
+ const ks=$("[data-ks]");if(ks)ks.onclick=async()=>{S.settings.apiKey=$("[data-k]").value.trim();save();const km=$("[data-km]");if(!S.settings.apiKey){km.textContent="Clave eliminada.";return}km.innerHTML=`<span class="spin"></span> Probando la clave…`;
+  try{const r=await askJSON('Return {"ok": true}');km.textContent=r&&r.ok?"Clave válida. La IA ya está activa.":"La clave respondió de forma inesperada."}catch(e){km.textContent=e&&e.code==="bad_key"?"La clave no es válida.":"No se pudo conectar; revisa tu conexión a internet."}}}
+
+/* vocab */
+let vq=null;
+function vVocab(){const box=w=>S.vocab[w]||0;const counts=[0,0,0,0,0];VOCAB.forEach(v=>counts[Math.min(4,box(v[0]))]++);
+ view.innerHTML=`<h1>Vocabulario académico</h1><p class="mute" style="max-width:62ch">${VOCAB.length} palabras frecuentes en textos universitarios. Las tarjetas usan repetición espaciada: lo que no sabes vuelve más seguido.</p>
+ <div class="boxes" style="margin-bottom:18px">${["Nuevas","Caja 1","Caja 2","Caja 3","Dominadas"].map((l,i)=>`<span>${l}<b>${counts[i]}</b></span>`).join("")}</div>
+ <div class="two"><div><div class="card flash" data-fc tabindex="0"></div><div class="actions" data-fa></div></div><div class="card"><h3>Prueba rápida</h3><p class="small mute">10 preguntas: elige el significado en español.</p><div data-qz><button class="btn primary" data-qs>Empezar prueba</button></div></div></div>`;
+ let cur=null,flipped=false;
+ function pick(){const mn=Math.min(...VOCAB.map(v=>box(v[0])));const c=VOCAB.filter(v=>box(v[0])<=mn+1);let n;do{n=c[Math.random()*c.length|0]}while(c.length>1&&n===cur);cur=n;flipped=false;draw()}
+ function draw(){const fc=$("[data-fc]");fc.innerHTML=flipped?`<div><div class="w">${esc(cur[0])}</div><p>${esc(cur[2])}</p><p style="font-size:22px"><b>${esc(cur[3])}</b></p></div>`:`<div><div class="w">${esc(cur[0])}</div><p class="mute">${esc(cur[1])} · toca para ver el significado</p></div>`;
+  $("[data-fa]").innerHTML=flipped?`<button class="btn" data-no>No la sabía</button><button class="btn primary" data-si>La sabía</button>`:`<button class="btn" data-fl>Voltear</button>${canAudio()?`<button class="btn" data-sp>${ICON.spk}Pronunciar</button>`:""}`;
+  const f=()=>{flipped=!flipped;draw()};fc.onclick=f;fc.onkeydown=e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();f()}};
+  const fl=$("[data-fl]");if(fl)fl.onclick=f;const sp=$("[data-sp]");if(sp)sp.onclick=()=>speak([{v:0,t:cur[0]}],.9).catch(()=>{});
+  const no=$("[data-no]");if(no){no.onclick=()=>{S.vocab[cur[0]]=0;save();pick()};$("[data-si]").onclick=()=>{S.vocab[cur[0]]=Math.min(4,box(cur[0])+1);save();pick()}}}
+ pick();
+ $("[data-qs]").onclick=()=>{const qs=shuffle(VOCAB).slice(0,10).map(v=>({q:`"${v[0]}" (${v[1]})`,o:[v[3],...distract(v)],why:v[2]}));const m=mcq(qs);const z=$("[data-qz]");
+  z.innerHTML=m.html+`<div class="actions"><button class="btn primary" data-ck>Comprobar</button></div><p data-out></p>`;m.bind(z);
+  $("[data-ck]").onclick=()=>{const ok=m.check(z,true);$("[data-ck]").remove();record("vocab",ok/10);$("[data-out]").innerHTML=`<b>${ok}/10</b> correctas. <button class="btn" data-again>Otra prueba</button>`;$("[data-again]").onclick=()=>render()}}}
+
+/* mock */
+let mockTimer=null;
+const MOCK={full:{name:"Simulacro completo",desc:"Las 4 secciones en versión reducida (~55 min).",plan:[["reading",["ctest","daily","academic"],14],["listening",["respond","respond","respond","conv","announce","talk"],12],["writing",["build","build","build","build","email","discussion"],20],["speaking",["repeat","interview"],8]]},
+reading:{name:"Solo Reading",desc:"3 tareas · 14 min",plan:[["reading",["ctest","daily","academic"],14]]},
+listening:{name:"Solo Listening",desc:"6 tareas · 12 min",plan:[["listening",["respond","respond","respond","conv","announce","talk"],12]]},
+writing:{name:"Solo Writing",desc:"6 tareas · 20 min",plan:[["writing",["build","build","build","build","email","discussion"],20]]},
+speaking:{name:"Solo Speaking",desc:"2 tareas · 8 min",plan:[["speaking",["repeat","interview"],8]]}};
+function vMock(){const past=S.attempts.filter(a=>a.t==="mock").slice(-6).reverse();
+ view.innerHTML=`<h1>Simulacro</h1><p class="mute" style="max-width:62ch">Condiciones de examen: tiempo por sección, el audio suena una sola vez y no ves las respuestas hasta el final. Al terminar recibes tu banda estimada por sección.</p>${capsNote()}
+ <div class="grid">${Object.entries(MOCK).map(([k,m])=>`<div class="card"><h3>${m.name}</h3><p class="mute small">${m.desc}</p><button class="btn ${k==="full"?"primary":""}" data-m="${k}">Comenzar</button></div>`).join("")}</div>
+ ${past.length?`<div class="card"><h3>Simulacros anteriores</h3><div class="scroll"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Banda</th></tr></thead><tbody>${past.map(p=>`<tr><td>${new Date(p.d).toLocaleDateString("es")}</td><td>${esc(MOCK[p.k]?MOCK[p.k].name:"")}</td><td class="n"><b>${band(p.s)}</b></td></tr>`).join("")}</tbody></table></div></div>`:""}`;
+ $$("[data-m]").forEach(b=>b.onclick=()=>runMock(b.dataset.m))}
+function runMock(k){cleanup();curView="practice";const M=MOCK[k];const queue=[];M.plan.forEach(([sec,ts,min])=>ts.forEach(t=>queue.push({sec,t,min})));
+ const results=[];let qi=0,curSec=null,left=0,expired=null;
+ view.innerHTML=`<div class="ph"><h2 data-st></h2><span class="small mute" data-pg></span><span class="clock" data-ck></span><button class="btn" data-ab>Abandonar</button></div><div data-run></div>`;
+ let ab=false;$("[data-ab]").onclick=e=>{if(!ab){ab=true;e.target.textContent="¿Seguro? Pulsa otra vez";return}cleanup();render()};
+ function next(){
+  while(qi<queue.length&&queue[qi].sec===expired){results.push({...queue[qi],s:0,label:"Sin tiempo"});qi++}
+  if(qi>=queue.length)return finish();
+  const q=queue[qi];
+  if(q.sec!==curSec){curSec=q.sec;left=q.min*60;expired=null;clearInterval(mockTimer);mockTimer=setInterval(()=>{left--;const c=$("[data-ck]");if(c){c.textContent=fmt(left);c.classList.toggle("low",left<=60)}if(left<=0){clearInterval(mockTimer);expired=curSec;toast("Se acabó el tiempo de "+SECS[curSec].name);handle&&handle.submit&&handle.submit()}},1000);$("[data-ck]").textContent=fmt(left)}
+  $("[data-st]").textContent=SECS[q.sec].name+" · "+TASKS[q.t].name;$("[data-pg]").textContent=`Tarea ${qi+1} de ${queue.length}`;
+  const item=nextItem(q.t);let doneOnce=false;const t0=Date.now();stopSpeak();if(handle&&handle.cleanup)handle.cleanup();
+  const ctx={exam:true,finish:(s,label,extra)=>{if(doneOnce)return;doneOnce=true;results.push({...q,s,label,fb:extra&&extra.fb});record(q.t,s,{dur:Math.round((Date.now()-t0)/1000)});qi++;
+   const run=$("[data-run]");run.insertAdjacentHTML("beforeend",`<div class="actions"><button class="btn primary" data-cn>Continuar</button><span class="small mute">Respuesta registrada.</span></div>`);$("[data-cn]",run).onclick=next;
+   if(expired===q.sec)next()}};
+  handle=RUN[q.t]($("[data-run]"),item,ctx);window.scrollTo(0,0)}
+ function finish(){clearInterval(mockTimer);stopSpeak();const secs=M.plan.map(p=>p[0]);
+  const per=secs.map(s=>{const r=results.filter(x=>x.sec===s);return r.reduce((a,b)=>a+b.s,0)/r.length});const bands=per.map(band);const ov=roundHalf(bands.reduce((a,b)=>a+b,0)/bands.length);
+  record("mock",per.reduce((a,b)=>a+b,0)/per.length,{k});curView="mockres";
+  view.innerHTML=`<h1>Resultado del simulacro</h1><div class="card"><div class="hero"><div class="big"><b>${ov}</b><span class="mute">Banda global estimada · ${CEFR[ov]}</span></div><div>${secs.map((s,i)=>`<div class="row"><b>${SECS[s].name}</b><div class="track"><div class="fill" style="width:${((bands[i]-1)/5*100).toFixed(1)}%"></div><div class="target" style="left:${(((+S.settings.target||4.5)-1)/5*100).toFixed(1)}%"></div></div><span class="val">${bands[i]}</span></div>`).join("")}</div></div></div>
+  <div class="card"><h3>Detalle por tarea</h3><div class="scroll"><table><thead><tr><th>Sección</th><th>Tarea</th><th>Resultado</th></tr></thead><tbody>${results.map(r=>`<tr><td>${SECS[r.sec].name}</td><td>${TASKS[r.t].name}</td><td class="n">${esc(r.label)}</td></tr>`).join("")}</tbody></table></div></div>
+  ${results.filter(r=>r.fb).map(r=>`<details class="card"><summary>Retroalimentación: ${TASKS[r.t].name}</summary>${renderFeedback(r.fb)}</details>`).join("")}
+  <div class="actions"><a class="btn primary" href="#inicio">Ir al inicio</a><button class="btn" data-again>Otro simulacro</button></div>`;
+  $("[data-again]").onclick=()=>{location.hash==="#simulacro"?render():location.hash="#simulacro"};window.scrollTo(0,0)}
+ next()}
+
+render();
+}
+</script>
+</body>
+</html>
